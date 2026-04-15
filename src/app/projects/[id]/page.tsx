@@ -38,7 +38,7 @@ export default function ProjectDetail() {
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
 
-  const isAdmin = (session?.user as any)?.role === 'ADMIN'
+  const isAdmin = (session?.user as any)?.role?.toLowerCase() === 'admin'
 
   useEffect(() => {
     if (status === 'loading') return
