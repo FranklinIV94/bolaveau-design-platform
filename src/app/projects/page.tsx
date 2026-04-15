@@ -49,11 +49,29 @@ export default function ProjectsList() {
 
   if (loading) {
     return (
-      <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 36, height: 36, border: '3px solid rgba(201,168,76,0.2)', borderTopColor: '#c9a84c', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 10px' }} />
-          <p style={{ color: '#c9a84c', fontSize: 13, fontWeight: 500 }}>Loading projects…</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header />
+        <div style={{ flex: 1, padding: '40px 32px 80px', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ width: 120, height: 28, borderRadius: 6, background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite', marginBottom: 8 }} />
+            <div style={{ width: 180, height: 16, borderRadius: 4, background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+            {[1,2,3].map((i) => (
+              <div key={i} style={{
+                background: '#1a1a1a', border: '1px solid rgba(201,168,76,0.08)',
+                borderRadius: 10, padding: 20,
+              }}>
+                <div style={{ height: 80, borderRadius: 6, background: 'linear-gradient(90deg, #151515 25%, #1e1e1e 50%, #151515 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite', marginBottom: 16 }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ width: '60%', height: 16, borderRadius: 4, background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+                  <div style={{ width: 60, height: 18, borderRadius: 4, background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+                </div>
+                <div style={{ width: '80%', height: 12, borderRadius: 4, background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+              </div>
+            ))}
+          </div>
+          <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
         </div>
       </div>
     )

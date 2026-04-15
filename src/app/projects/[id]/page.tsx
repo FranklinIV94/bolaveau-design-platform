@@ -111,12 +111,17 @@ export default function ProjectDetail() {
 
   if (loading) {
     return (
-      <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '3px solid rgba(201,168,76,0.2)', borderTopColor: '#c9a84c', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ color: '#c9a84c', fontSize: 14, fontWeight: 500 }}>Loading project…</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header />
+        <div style={{ background: '#1a1a1a', borderBottom: '1px solid rgba(201,168,76,0.1)', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 16, minHeight: 52 }}>
+          <div style={{ width: 60, height: 14, borderRadius: 4, background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(201,168,76,0.1)' }} />
+          <div style={{ width: 140, height: 16, borderRadius: 4, background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
         </div>
+        <div style={{ flex: 1, minHeight: 480, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 48, height: 48, border: '3px solid rgba(201,168,76,0.2)', borderTopColor: '#c9a84c', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
       </div>
     )
   }
@@ -155,9 +160,13 @@ export default function ProjectDetail() {
     <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
 
-      {/* Project info bar — compact, single row */}
+      {/* Project info bar — sticky */}
       <div style={{
-        background: '#1a1a1a',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        background: 'rgba(26,26,26,0.92)',
+        backdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(201,168,76,0.15)',
         padding: '10px 24px',
         display: 'flex',
@@ -166,6 +175,7 @@ export default function ProjectDetail() {
         flexWrap: 'wrap',
         minHeight: 52,
       }}>
+      
         <button
           onClick={() => router.push('/projects')}
           style={{
