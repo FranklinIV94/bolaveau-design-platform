@@ -25,6 +25,22 @@ interface Model {
   created_at: string
 }
 
+function formatModelName(filename: string): string {
+  return filename.replace(/\.(glb|gltf)$/i, '').replace(/_/g, ' ')
+}
+
+function relativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  if (hours < 24) return `${hours}h ago`
+  if (days < 30) return `${days}d ago`
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 export default function ProjectDetail() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -41,10 +57,7 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     if (status === 'loading') return
-    if (!session) {
-      router.push('/auth/signin')
-      return
-    }
+    if (!session) { router.push('/auth/signin'); return }
     fetchData()
   }, [session, status, router, projectId])
 
@@ -64,28 +77,14 @@ export default function ProjectDetail() {
   }
 
   const handleUpload = async (file: File) => {
-    if (!file.name.match(/\.(glb|gltf)$/i)) {
-      alert('Only .glb and .gltf files are allowed')
-      return
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      alert('File size must be under 50MB')
-      return
-    }
-
+    if (!file.name.match(/\.(glb|gltf)$/i)) { alert('Only .glb and .gltf files are allowed'); return }
+    if (file.size > 50 * 1024 * 1024) { alert('File size must be under 50MB'); return }
     setUploading(true)
     const formData = new FormData()
     formData.append('file', file)
     formData.append('projectId', projectId)
-
-    const res = await fetch('/api/models/upload', {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (res.ok) {
-      fetchData()
-    } else {
+    const res = await fetch('/api/models/upload', { method: 'POST', body: formData })
+    if (res.ok) { fetchData() } else {
       const data = await res.json()
       alert(data.error || 'Upload failed')
     }
@@ -113,7 +112,11 @@ export default function ProjectDetail() {
   if (loading) {
     return (
       <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#c9a84c' }}>Loading...</p>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 40, height: 40, border: '3px solid rgba(201,168,76,0.2)', borderTopColor: '#c9a84c', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+          <p style={{ color: '#c9a84c', fontSize: 14, fontWeight: 500 }}>Loading project…</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
       </div>
     )
   }
@@ -133,199 +136,298 @@ export default function ProjectDetail() {
   }
   const sc = statusColors[project.status] || statusColors.planning
 
-  // Precompute model list items to avoid `>` operator in JSX attr expressions
+  // Precompute for JSX (avoid `>` in style expressions)
   const modelItems = models.map((m) => {
     const isActive = m.id === activeModelId
     return {
       ...m,
       isActive,
+      displayName: formatModelName(m.filename),
       bgStyle: isActive ? 'rgba(201,168,76,0.08)' : '#1a1a1a',
-      borderStyle: isActive ? 'rgba(201,168,76,0.4)' : 'rgba(201,168,76,0.1)',
+      borderStyle: isActive ? 'rgba(201,168,76,0.5)' : 'rgba(201,168,76,0.1)',
       textColor: isActive ? '#c9a84c' : '#ccc',
       cursorStyle: hasManyModels ? 'pointer' : 'default',
-      formattedSize: (m.file_size / 1024 / 1024).toFixed(1) + ' MB',
-      displayName: m.filename.replace('.glb', '').replace(/_/g, ' '),
+      timeAgo: relativeTime(m.created_at),
     }
   })
 
   return (
     <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Project Info Bar */}
-        <div style={{
-          background: '#1a1a1a',
-          borderBottom: '1px solid rgba(201,168,76,0.2)',
-          padding: '12px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          flexWrap: 'wrap',
+
+      {/* Project info bar — compact, single row */}
+      <div style={{
+        background: '#1a1a1a',
+        borderBottom: '1px solid rgba(201,168,76,0.15)',
+        padding: '10px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        flexWrap: 'wrap',
+        minHeight: 52,
+      }}>
+        <button
+          onClick={() => router.push('/projects')}
+          style={{
+            color: '#c9a84c',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 500,
+            padding: '4px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            transition: 'opacity 0.15s',
+            flexShrink: 0,
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Projects
+        </button>
+
+        <div style={{ width: 1, height: 16, background: 'rgba(201,168,76,0.2)', flexShrink: 0 }} />
+
+        <h2 style={{ color: '#fff', fontSize: 16, fontWeight: 600, margin: 0, flexShrink: 0 }}>{project.name}</h2>
+
+        <span style={{
+          background: sc.bg, color: sc.text,
+          fontSize: 10, fontWeight: 700,
+          padding: '3px 9px', borderRadius: 4,
+          textTransform: 'uppercase', letterSpacing: 0.8,
+          flexShrink: 0,
         }}>
-          <button onClick={() => router.push('/projects')} style={{ color: '#c9a84c', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>
-            ← Back
-          </button>
-          <h2 style={{ color: '#fff', fontSize: 18, fontWeight: 600, margin: 0 }}>{project.name}</h2>
-          <span style={{
-            background: sc.bg,
-            color: sc.text,
-            fontSize: 11,
-            fontWeight: 600,
-            padding: '3px 10px',
-            borderRadius: 4,
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-          }}>
-            {project.status}
-          </span>
-          {project.address && <span style={{ color: '#888', fontSize: 12 }}>{project.address}</span>}
-          {hasManyModels && (
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#666', fontSize: 12 }}>Model:</span>
-              <select
-                value={activeModelId ?? ''}
-                onChange={(e) => {
-                  const m = models.find((x) => x.id === e.target.value)
-                  setSelectedModel(m ?? null)
-                }}
-                style={{
-                  background: '#2a2a2a',
-                  color: '#c9a84c',
-                  border: '1px solid rgba(201,168,76,0.3)',
-                  borderRadius: 6,
-                  padding: '4px 10px',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                {models.map((m) => (
-                  <option key={m.id} value={m.id}>{m.filename}</option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+          {project.status}
+        </span>
 
-        {/* 3D Viewer — expands to fill available space */}
-        <div style={{ flex: 1, position: 'relative', minHeight: 480, display: 'flex', flexDirection: 'column' }}>
-          {modelUrl ? (
-            <div style={{ flex: 1, position: 'relative', minHeight: 480 }}>
-              <ModelViewer key={activeModelId} modelUrl={modelUrl} />
-              {hasManyModels && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: 16,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  display: 'flex',
-                  gap: 6,
-                  zIndex: 20,
-                }}>
-                  {modelItems.map((mi) => (
-                    <button
-                      key={mi.id}
-                      onClick={() => setSelectedModel(models.find((x) => x.id === mi.id) ?? null)}
-                      style={{
-                        background: mi.isActive ? '#c9a84c' : 'rgba(26,26,26,0.85)',
-                        color: mi.isActive ? '#0a0a0a' : '#888',
-                        border: '1px solid ' + (mi.isActive ? '#c9a84c' : 'rgba(201,168,76,0.25)'),
-                        borderRadius: 6,
-                        padding: '5px 14px',
-                        fontSize: 12,
-                        cursor: 'pointer',
-                        fontWeight: 500,
-                        transition: 'all 0.15s',
-                        backdropFilter: 'blur(8px)',
-                      }}
-                    >
-                      {mi.displayName}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              minHeight: 480,
-              background: '#0a0a0a',
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>📦</div>
-                <p style={{ color: '#666', fontSize: 16, fontWeight: 500 }}>No 3D model uploaded</p>
-                <p style={{ color: '#444', fontSize: 13, marginTop: 4 }}>
-                  {isAdmin ? 'Upload a .glb or .gltf file below' : 'Waiting for admin to upload a model'}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Upload Section (Admin only) */}
-        {isAdmin && (
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            style={{
-              background: dragOver ? 'rgba(201,168,76,0.05)' : '#1a1a1a',
-              border: dragOver ? '2px dashed #c9a84c' : '1px solid rgba(201,168,76,0.2)',
-              borderRadius: 8,
-              padding: 20,
-              margin: 16,
-              textAlign: 'center',
-              transition: 'all 0.2s',
-            }}
-          >
-            <p style={{ color: '#999', fontSize: 13, margin: '0 0 8px' }}>
-              {uploading ? 'Uploading...' : 'Drag & drop a .glb/.gltf file here, or click to browse'}
-            </p>
-            <input
-              type="file"
-              accept=".glb,.gltf"
-              onChange={handleFileInput}
-              disabled={uploading}
-              style={{ fontSize: 13 }}
-            />
-          </div>
+        {project.address && (
+          <span style={{ color: '#666', fontSize: 12, flexShrink: 0 }}>{project.address}</span>
         )}
 
-        {/* Models List */}
-        {models.length > 0 && (
-          <div style={{ padding: '0 16px 16px' }}>
-            <h3 style={{ color: '#999', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 8px' }}>
-              Models ({models.length})
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {modelItems.map((mi) => (
-                <div
-                  key={mi.id}
-                  onClick={() => hasManyModels && setSelectedModel(models.find((x) => x.id === mi.id) ?? null)}
-                  style={{
-                    background: mi.bgStyle,
-                    border: '1px solid ' + mi.borderStyle,
-                    borderRadius: 6,
-                    padding: '8px 14px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: mi.cursorStyle,
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <span style={{ color: mi.textColor, fontSize: 13 }}>{mi.filename}</span>
-                  <span style={{ color: '#555', fontSize: 11 }}>
-                    {mi.formattedSize} · {new Date(mi.created_at).toLocaleDateString()}
-                  </span>
-                </div>
+        {hasManyModels && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <span style={{ color: '#555', fontSize: 11 }}>Model</span>
+            <select
+              value={activeModelId ?? ''}
+              onChange={(e) => {
+                const m = models.find((x) => x.id === e.target.value)
+                setSelectedModel(m ?? null)
+              }}
+              style={{
+                background: '#252525',
+                color: '#c9a84c',
+                border: '1px solid rgba(201,168,76,0.25)',
+                borderRadius: 6,
+                padding: '4px 10px',
+                fontSize: 12,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>{formatModelName(m.filename)}</option>
               ))}
-            </div>
+            </select>
           </div>
         )}
       </div>
+
+      {/* 3D Viewer — expands to fill available space */}
+      <div style={{ flex: 1, position: 'relative', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {modelUrl ? (
+          <div style={{ flex: 1, position: 'relative', minHeight: 480 }}>
+            <ModelViewer key={activeModelId} modelUrl={modelUrl} />
+            {hasManyModels && (
+              <div style={{
+                position: 'absolute',
+                bottom: 62,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                gap: 6,
+                zIndex: 20,
+                background: 'rgba(10,10,10,0.75)',
+                border: '1px solid rgba(201,168,76,0.2)',
+                borderRadius: 8,
+                padding: '5px 8px',
+                backdropFilter: 'blur(10px)',
+              }}>
+                {modelItems.map((mi) => (
+                  <button
+                    key={mi.id}
+                    onClick={() => setSelectedModel(models.find((x) => x.id === mi.id) ?? null)}
+                    style={{
+                      background: mi.isActive ? '#c9a84c' : 'transparent',
+                      color: mi.isActive ? '#0a0a0a' : '#888',
+                      border: '1px solid ' + (mi.isActive ? '#c9a84c' : 'rgba(201,168,76,0.2)'),
+                      borderRadius: 5,
+                      padding: '5px 14px',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {mi.displayName}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            height: '100%', minHeight: 480,
+            background: '#0a0a0a',
+            gap: 12,
+          }}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ opacity: 0.2 }}>
+              <rect x="6" y="10" width="36" height="28" rx="2" stroke="#c9a84c" strokeWidth="2"/>
+              <path d="M6 18h36" stroke="#c9a84c" strokeWidth="2"/>
+              <path d="M18 10v8M30 10v8" stroke="#c9a84c" strokeWidth="2"/>
+            </svg>
+            <p style={{ color: '#555', fontSize: 15, fontWeight: 500, margin: 0 }}>No models in this project</p>
+            {isAdmin && <p style={{ color: '#444', fontSize: 13, margin: 0 }}>Upload a .glb file to get started</p>}
+          </div>
+        )}
+      </div>
+
+      {/* Upload zone — admin only */}
+      {isAdmin && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          style={{
+            background: dragOver ? 'rgba(201,168,76,0.04)' : 'transparent',
+            border: dragOver ? '2px dashed rgba(201,168,76,0.5)' : '2px dashed transparent',
+            borderRadius: 8,
+            padding: '12px 24px',
+            margin: '0 24px 16px',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <div style={{
+            flex: 1,
+            background: '#1a1a1a',
+            border: '1px dashed rgba(201,168,76,0.2)',
+            borderRadius: 8,
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            transition: 'all 0.2s',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
+              <path d="M9 3v9M5 8l4-4 4 4M3 15h12" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: '#888', fontSize: 13, margin: 0 }}>
+                {uploading ? 'Uploading model…' : 'Drop a .glb or .gltf file to upload'}
+              </p>
+              <p style={{ color: '#444', fontSize: 11, margin: '2px 0 0' }}>3D model files only · Max 50MB</p>
+            </div>
+            <label style={{
+              background: 'rgba(201,168,76,0.1)',
+              border: '1px solid rgba(201,168,76,0.25)',
+              borderRadius: 6,
+              padding: '6px 14px',
+              color: '#c9a84c',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              flexShrink: 0,
+            }}>
+              Browse Files
+              <input
+                type="file"
+                accept=".glb,.gltf"
+                onChange={handleFileInput}
+                disabled={uploading}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Models list */}
+      {models.length > 0 && (
+        <div style={{ padding: '0 24px 20px' }}>
+          <div style={{
+            background: '#1a1a1a',
+            border: '1px solid rgba(201,168,76,0.1)',
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}>
+            {modelItems.map((mi, idx) => (
+              <div
+                key={mi.id}
+                onClick={() => hasManyModels && setSelectedModel(models.find((x) => x.id === mi.id) ?? null)}
+                style={{
+                  background: mi.bgStyle,
+                  borderBottom: idx < models.length - 1 ? '1px solid rgba(201,168,76,0.06)' : 'none',
+                  padding: '10px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  cursor: mi.cursorStyle,
+                  transition: 'all 0.15s',
+                }}
+              >
+                {/* Model icon */}
+                <div style={{
+                  width: 32, height: 32, borderRadius: 6,
+                  background: mi.isActive ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.04)',
+                  border: '1px solid ' + (mi.isActive ? 'rgba(201,168,76,0.35)' : 'rgba(201,168,76,0.1)'),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 1L14 5v6L8 15 2 11V5L8 1z" stroke={mi.isActive ? '#c9a84c' : '#555'} strokeWidth="1.2" fill="none"/>
+                    <path d="M8 1v10M2 5l6 2 6-2M8 11v4M2 11l6 2 6-2" stroke={mi.isActive ? '#c9a84c' : '#555'} strokeWidth="1.2"/>
+                  </svg>
+                </div>
+
+                {/* Name + meta */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    color: mi.textColor,
+                    fontSize: 13, fontWeight: 500,
+                    margin: 0,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {mi.displayName}
+                  </p>
+                  <p style={{ color: '#444', fontSize: 11, margin: '1px 0 0' }}>
+                    {(mi.file_size / 1024 / 1024).toFixed(1)} MB · Uploaded {mi.timeAgo}
+                  </p>
+                </div>
+
+                {/* Active indicator */}
+                {mi.isActive && (
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: '#c9a84c',
+                    flexShrink: 0,
+                    boxShadow: '0 0 6px rgba(201,168,76,0.6)',
+                  }} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   )
