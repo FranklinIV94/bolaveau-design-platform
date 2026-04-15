@@ -143,6 +143,9 @@ export default function AdminProjects() {
   const [form, setForm] = useState({ name: '', description: '', address: '', status: 'planning' })
   const [toasts, setToasts] = useState<Toast[]>([])
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [expandedDesc, setExpandedDesc] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   const addToast = (message: string, type: 'success' | 'error' = 'success') => {
     const id = Date.now().toString()
@@ -152,7 +155,7 @@ export default function AdminProjects() {
 
   useEffect(() => {
     if (status === 'loading') return
-    if (!session || (session?.user as any)?.role !== 'admin') {
+    if (!session || (session?.user as any)?.role?.toLowerCase() !== 'admin') {
       router.push('/auth/signin')
       return
     }
@@ -168,36 +171,41 @@ export default function AdminProjects() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (editing) {
-      const res = await fetch(`/api/projects/${editing.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      if (res.ok) {
-        addToast(`"${form.name}" updated`)
-        setShowForm(false)
-        setEditing(null)
-        setForm({ name: '', description: '', address: '', status: 'planning' })
-        fetchProjects()
+    setSubmitting(true)
+    try {
+      if (editing) {
+        const res = await fetch(`/api/projects/${editing.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+        if (res.ok) {
+          addToast(`"${form.name}" updated`)
+          setShowForm(false)
+          setEditing(null)
+          setForm({ name: '', description: '', address: '', status: 'planning' })
+          fetchProjects()
+        } else {
+          addToast('Failed to update project', 'error')
+        }
       } else {
-        addToast('Failed to update project', 'error')
+        const res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+        if (res.ok) {
+          addToast(`"${form.name}" created`)
+          setShowForm(false)
+          setEditing(null)
+          setForm({ name: '', description: '', address: '', status: 'planning' })
+          fetchProjects()
+        } else {
+          addToast('Failed to create project', 'error')
+        }
       }
-    } else {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      if (res.ok) {
-        addToast(`"${form.name}" created`)
-        setShowForm(false)
-        setEditing(null)
-        setForm({ name: '', description: '', address: '', status: 'planning' })
-        fetchProjects()
-      } else {
-        addToast('Failed to create project', 'error')
-      }
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -219,6 +227,14 @@ export default function AdminProjects() {
     setShowForm(true)
   }
 
+  // Filter projects by status
+  const filteredProjects = filterStatus === 'all'
+    ? projects
+    : projects.filter((p) => p.status === filterStatus)
+
+  // Count by status for filter pills
+  const countByStatus = (s: string) => projects.filter((p) => p.status === s).length
+
   if (loading) {
     return (
       <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -239,6 +255,16 @@ export default function AdminProjects() {
     transition: 'border-color 0.2s',
   }
 
+  // Precompute filter pill data (avoid > in JSX)
+  const filterPills = ['all', 'planning', 'in-progress', 'completed'].map((s) => ({
+    key: s,
+    label: s === 'all' ? `All (${projects.length})` : `${statusLabels[s] || s} (${countByStatus(s)})`,
+    isActive: filterStatus === s,
+    border: filterStatus === s ? 'rgba(201,168,76,0.5)' : 'rgba(255,255,255,0.08)',
+    bg: filterStatus === s ? 'rgba(201,168,76,0.1)' : 'transparent',
+    color: filterStatus === s ? '#c9a84c' : '#555',
+  }))
+
   return (
     <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
@@ -246,7 +272,11 @@ export default function AdminProjects() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
             <h1 style={{ color: '#fff', fontSize: 26, fontWeight: 600, margin: '0 0 4px' }}>Projects</h1>
-            <p style={{ color: '#555', fontSize: 12, margin: 0 }}>{projects.length} total</p>
+            <p style={{ color: '#555', fontSize: 12, margin: 0 }}>
+              {filteredProjects.length === projects.length
+                ? `${projects.length} total`
+                : `${filteredProjects.length} of ${projects.length}`}
+            </p>
           </div>
           <button
             onClick={() => { setShowForm(!showForm); setEditing(null); setForm({ name: '', description: '', address: '', status: 'planning' }) }}
@@ -264,6 +294,30 @@ export default function AdminProjects() {
           </button>
         </div>
 
+        {/* Status filter pills */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+          {filterPills.map((fp) => (
+            <button
+              key={fp.key}
+              onClick={() => setFilterStatus(fp.key)}
+              aria-pressed={fp.isActive}
+              style={{
+                padding: '5px 14px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                border: `1px solid ${fp.border}`,
+                background: fp.bg,
+                color: fp.color,
+              }}
+            >
+              {fp.label}
+            </button>
+          ))}
+        </div>
+
         {showForm && (
           <form onSubmit={handleSubmit} style={{
             background: '#1a1a1a',
@@ -274,45 +328,53 @@ export default function AdminProjects() {
           }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Name</label>
+                <label htmlFor="proj-name" style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Name</label>
                 <input
+                  id="proj-name"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
                   placeholder="e.g. Ocean Drive Residence"
+                  aria-label="Project name"
                   style={inputStyle}
                   onFocus={(e) => e.target.style.borderColor = 'rgba(201,168,76,0.45)'}
                   onBlur={(e) => e.target.style.borderColor = 'rgba(201,168,76,0.2)'}
                 />
               </div>
               <div>
-                <label style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Address</label>
+                <label htmlFor="proj-address" style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Address</label>
                 <input
+                  id="proj-address"
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                   placeholder="123 Main St, Fort Lauderdale, FL"
+                  aria-label="Project address"
                   style={inputStyle}
                   onFocus={(e) => e.target.style.borderColor = 'rgba(201,168,76,0.45)'}
                   onBlur={(e) => e.target.style.borderColor = 'rgba(201,168,76,0.2)'}
                 />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Description</label>
+                <label htmlFor="proj-desc" style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Description</label>
                 <textarea
+                  id="proj-desc"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
                   placeholder="A brief description of the project scope and vision"
+                  aria-label="Project description"
                   style={{ ...inputStyle, resize: 'vertical' }}
                   onFocus={(e) => e.target.style.borderColor = 'rgba(201,168,76,0.45)'}
                   onBlur={(e) => e.target.style.borderColor = 'rgba(201,168,76,0.2)'}
                 />
               </div>
               <div>
-                <label style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Status</label>
+                <label htmlFor="proj-status" style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Status</label>
                 <select
+                  id="proj-status"
                   value={form.status}
                   onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  aria-label="Project status"
                   style={{ ...inputStyle, cursor: 'pointer' }}
                   onFocus={(e) => e.target.style.borderColor = 'rgba(201,168,76,0.45)'}
                   onBlur={(e) => e.target.style.borderColor = 'rgba(201,168,76,0.2)'}
@@ -324,24 +386,59 @@ export default function AdminProjects() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button type="submit" style={{ background: '#c9a84c', color: '#0a0a0a', fontWeight: 600, fontSize: 13, border: 'none', borderRadius: 6, padding: '9px 24px', cursor: 'pointer' }}>
+              <button
+                type="submit"
+                disabled={submitting}
+                aria-busy={submitting}
+                style={{
+                  background: submitting ? 'rgba(201,168,76,0.5)' : '#c9a84c',
+                  color: '#0a0a0a', fontWeight: 600, fontSize: 13,
+                  border: 'none', borderRadius: 6, padding: '9px 24px',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                {submitting && (
+                  <span style={{
+                    width: 14, height: 14, border: '2px solid rgba(10,10,10,0.3)',
+                    borderTopColor: '#0a0a0a', borderRadius: '50%',
+                    animation: 'spin 0.6s linear infinite',
+                  }} />
+                )}
                 {editing ? 'Update Project' : 'Create Project'}
               </button>
               <button type="button" onClick={() => { setShowForm(false); setEditing(null) }} style={{ background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '9px 24px', cursor: 'pointer', fontSize: 13 }}>
                 Cancel
               </button>
             </div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </form>
         )}
 
-        {projects.length === 0 ? (
+        {filteredProjects.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 240, gap: 12, textAlign: 'center' }}>
-            <p style={{ color: '#555', fontSize: 14, margin: 0 }}>No projects yet. Create your first project above.</p>
+            <div style={{
+              width: 56, height: 56, borderRadius: 12,
+              background: 'rgba(201,168,76,0.05)',
+              border: '1px solid rgba(201,168,76,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <p style={{ color: '#555', fontSize: 14, margin: 0 }}>
+              {projects.length === 0 ? 'No projects yet. Create your first project above.' : 'No projects match this filter.'}
+            </p>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-            {projects.map((p) => {
+            {filteredProjects.map((p) => {
               const sc = statusColors[p.status] || statusColors.planning
+              const isExpanded = expandedDesc === p.id
+              const needsTruncate = p.description.length > 100
+              const displayDesc = isExpanded ? p.description : (needsTruncate ? p.description.slice(0, 100) + '…' : p.description)
+
               return (
                 <div key={p.id} style={{
                   background: '#1a1a1a',
@@ -365,11 +462,27 @@ export default function AdminProjects() {
                   </div>
                   {p.address && <p style={{ color: '#666', fontSize: 12, margin: '0 0 8px' }}>{p.address}</p>}
                   {p.description && (
-                    <p style={{ color: '#555', fontSize: 12, margin: '0 0 16px', lineHeight: 1.5, flex: 1 }}>
-                      {p.description.length > 100 ? p.description.slice(0, 100) + '…' : p.description}
+                    <p
+                      style={{ color: '#555', fontSize: 12, margin: '0 0 4px', lineHeight: 1.5, flex: 1 }}
+                    >
+                      {displayDesc}
                     </p>
                   )}
-                  <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
+                  {needsTruncate && (
+                    <button
+                      onClick={() => setExpandedDesc(isExpanded ? null : p.id)}
+                      style={{
+                        background: 'none', border: 'none', color: '#c9a84c',
+                        fontSize: 11, cursor: 'pointer', padding: 0,
+                        marginBottom: 12, textAlign: 'left',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: 2,
+                      }}
+                    >
+                      {isExpanded ? 'Show less' : 'Read more'}
+                    </button>
+                  )}
+                  <div style={{ marginTop: 'auto', display: 'flex', gap: 8, paddingTop: needsTruncate ? 0 : 16 }}>
                     <button onClick={() => router.push(`/projects/${p.id}`)} style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 5, padding: '5px 12px', color: '#c9a84c', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', flex: 1 }}>
                       View
                     </button>

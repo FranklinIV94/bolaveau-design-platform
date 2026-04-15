@@ -53,6 +53,7 @@ export default function ProjectDetail() {
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [selectedModel, setSelectedModel] = useState<Model | null>(null)
+  const [copiedLink, setCopiedLink] = useState(false)
   const isAdmin = (session?.user as any)?.role?.toLowerCase() === 'admin'
 
   useEffect(() => {
@@ -216,6 +217,44 @@ export default function ProjectDetail() {
         {project.address && (
           <span style={{ color: '#666', fontSize: 12, flexShrink: 0 }}>{project.address}</span>
         )}
+
+        {project.description && (
+          <span style={{ color: '#444', fontSize: 11, flexShrink: 0, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.description}</span>
+        )}
+
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.href)
+            setCopiedLink(true)
+            setTimeout(() => setCopiedLink(false), 2000)
+          }}
+          title="Copy project link"
+          aria-label="Copy project link to clipboard"
+          style={{
+            marginLeft: 'auto',
+            background: 'rgba(201,168,76,0.06)',
+            border: '1px solid rgba(201,168,76,0.15)',
+            borderRadius: 5,
+            padding: '4px 10px',
+            color: copiedLink ? '#22c55e' : '#c9a84c',
+            fontSize: 11,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            flexShrink: 0,
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            {copiedLink ? (
+              <path d="M2 6l3 3 5-6" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            ) : (
+              <path d="M4 1H2a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V9M7 1h4v4M11 1L5 7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            )}
+          </svg>
+          {copiedLink ? 'Copied!' : 'Share'}
+        </button>
 
         {hasManyModels && (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>

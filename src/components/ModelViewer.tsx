@@ -104,8 +104,16 @@ function SceneContent({
         target={viewMode === 'interior' ? [0, 1.6, 0] : [0, 0, 0]}
       />
 
-      <GizmoHelper alignment="bottom-right" margin={[90, 90]}>
-        <GizmoViewcube />
+      {/* Branded viewcube — gold labels on dark faces */}
+      <GizmoHelper alignment="bottom-right" margin={[100, 100]}>
+        <GizmoViewcube
+          color="#c9a84c"
+          hoverColor="#e0bc5c"
+          opacity={0.9}
+          labelColor="#c9a84c"
+          labelSize={0.6}
+          size={70}
+        />
       </GizmoHelper>
     </>
   )
