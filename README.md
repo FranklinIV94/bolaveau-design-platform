@@ -1,36 +1,149 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bolaveau Design Platform
 
-## Getting Started
+A Next.js 14+ platform for Bolaveau Group to host and view 3D models of their interior design/construction projects.
 
-First, run the development server:
+## Features
+
+- **Auth**: NextAuth v4 + Supabase credentials-based auth
+- **Role-based access**: ADMIN (upload/manage) and CLIENT (view only)
+- **Project Management**: Create, edit, delete projects with status tracking
+- **3D Model Hosting**: Upload .glb/.gltf files per project
+- **Real 3D Viewer**: GLTF model loader with React Three Fiber + Drei
+
+## Tech Stack
+
+- Next.js 15 (App Router)
+- React Three Fiber + Drei (3D visualization)
+- NextAuth v4 (authentication)
+- Supabase (database + storage)
+- TypeScript
+
+## Setup
+
+### 1. Database Setup
+
+Go to your Supabase project dashboard → **SQL Editor** and run the contents of `supabase-setup.sql`:
+
+```sql
+-- Create projects table
+CREATE TABLE IF NOT EXISTS projects (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT '',
+  address VARCHAR(500) DEFAULT '',
+  status VARCHAR(50) DEFAULT 'planning',
+  client_id UUID,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create models table
+CREATE TABLE IF NOT EXISTS models (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  filename VARCHAR(500) NOT NULL,
+  storage_path VARCHAR(1000) NOT NULL,
+  file_size BIGINT DEFAULT 0,
+  uploaded_by UUID,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable RLS (optional - app handles auth)
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE models ENABLE ROW LEVEL SECURITY;
+
+-- Insert admin user (password: bolaveau2026)
+INSERT INTO admin_users (email, password_hash, name, role, is_active)
+VALUES ('admin@bolaveau.com', 'bolaveau2026', 'Bolaveau Admin', 'ADMIN', true)
+ON CONFLICT (email) DO NOTHING;
+
+-- Insert sample project
+INSERT INTO projects (name, description, address, status)
+VALUES ('Sunset Villa Renovation', 'Complete interior redesign of a 4-bedroom villa.', '1234 Ocean Drive, Miami Beach, FL 33139', 'in-progress');
+```
+
+### 2. Environment Variables
+
+Create `.env.local` (already created, or copy from `.env.local.example`):
+
+```
+NEXTAUTH_SECRET=bolaveau-dev-secret-2026
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://wtbrdvplrhbarrqrvoag.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+### 4. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 5. Login
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Email**: admin@bolaveau.com
+- **Password**: bolaveau2026
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Routes
 
-## Learn More
+| Route | Description |
+|-------|-------------|
+| `/` | Redirects to signin or dashboard |
+| `/auth/signin` | Sign in page |
+| `/projects` | Client project list (authenticated) |
+| `/projects/[id]` | Project detail with 3D viewer |
+| `/admin/projects` | Admin project management |
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── auth/[...nextauth]/    # NextAuth handler
+│   │   ├── models/                # Model CRUD
+│   │   ├── models/upload/         # File upload
+│   │   ├── models/file/           # File serving
+│   │   └── projects/             # Project CRUD
+│   ├── auth/signin/              # Sign in page
+│   ├── admin/projects/           # Admin dashboard
+│   └── projects/[id]/           # Project viewer
+├── components/
+│   ├── AuthProvider.tsx          # NextAuth session provider
+│   ├── Header.tsx                 # Bolaveau branding header
+│   ├── Footer.tsx                 # Footer
+│   └── ModelViewer.tsx            # Real GLTF 3D viewer
+└── lib/
+    ├── supabase.ts                # Supabase client
+    └── supabase-admin.ts          # Admin client
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 3D Model Upload
 
-## Deploy on Vercel
+- Accepts `.glb` and `.gltf` files only
+- Max file size: 50MB
+- Stored in Supabase Storage bucket `3d-models`
+- Drag & drop upload on project detail page (admin only)
+- Latest model auto-loads in the 3D viewer
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Colors
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Token | Value | Use |
+|-------|-------|-----|
+| Gold | `#c9a84c` | Primary accent |
+| Dark | `#1a1a1a` | Cards, header |
+| Background | `#0a0a0a` | Page background |
+
+## Build
+
+```bash
+npm run build   # Clean production build ✓
+npm run dev     # Development server
+```

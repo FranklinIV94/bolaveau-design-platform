@@ -6,8 +6,18 @@ module.exports = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  transpilePackages: ['three', '@pascal-app/viewer', '@pascal-app/core'],
+  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
   images: {
     unoptimized: true,
+  },
+  async headers() {
+    return [
+      {
+        source: '/api/models/file/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+        ],
+      },
+    ]
   },
 }
