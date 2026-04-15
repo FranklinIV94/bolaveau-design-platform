@@ -9,14 +9,36 @@
   --bolaveau-dark: #1a1a1a;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global focus ring — keyboard accessible */
+:focus-visible {
+  outline: 2px solid rgba(201, 168, 76, 0.6);
+  outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Headings font weight consistency */
+h1, h2, h3, h4 {
+  font-weight: 600;
 }
 
 @layer utilities {
@@ -30,6 +52,12 @@ body {
   100% { background-position: -200% 0; }
 }
 
+@keyframes uploadProgress {
+  0% { transform: translateX(-100%); width: 40%; }
+  50% { width: 70%; }
+  100% { transform: translateX(300%); width: 40%; }
+}
+
 /* Scrollbar styling for dark theme */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #0a0a0a; }
@@ -38,3 +66,13 @@ body {
 
 /* Selection color */
 ::selection { background: rgba(201,168,76,0.3); color: #fff; }
+
+/* Cursor pointer on all clickable interactive elements */
+button, a, [role="button"] {
+  cursor: pointer;
+}
+
+/* Disabled cursor */
+button:disabled, input:disabled, textarea:disabled {
+  cursor: not-allowed;
+}

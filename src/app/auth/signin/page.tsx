@@ -105,7 +105,7 @@ export default function SignInPage() {
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{
+            <label htmlFor="email" style={{
               color: '#888', fontSize: 11, fontWeight: 600,
               display: 'block', marginBottom: 6,
               letterSpacing: 0.8, textTransform: 'uppercase',
@@ -113,12 +113,14 @@ export default function SignInPage() {
               Email
             </label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
               placeholder="your@email.com"
+              aria-label="Email address"
               style={{
                 width: '100%',
                 padding: '11px 14px',
@@ -136,8 +138,9 @@ export default function SignInPage() {
             />
           </div>
 
+
           <div style={{ marginBottom: 24 }}>
-            <label style={{
+            <label htmlFor="password" style={{
               color: '#888', fontSize: 11, fontWeight: 600,
               display: 'block', marginBottom: 6,
               letterSpacing: 0.8, textTransform: 'uppercase',
@@ -145,12 +148,14 @@ export default function SignInPage() {
               Password
             </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
               placeholder="••••••••"
+              aria-label="Password"
               style={{
                 width: '100%',
                 padding: '11px 14px',
@@ -171,6 +176,8 @@ export default function SignInPage() {
           <button
             type="submit"
             disabled={loading}
+            aria-label={loading ? 'Signing in…' : 'Sign in'}
+            aria-busy={loading}
             style={{
               width: '100%',
               padding: '12px',

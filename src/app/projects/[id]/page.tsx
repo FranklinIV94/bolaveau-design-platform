@@ -226,6 +226,7 @@ export default function ProjectDetail() {
                 const m = models.find((x) => x.id === e.target.value)
                 setSelectedModel(m ?? null)
               }}
+              aria-label="Select a 3D model"
               style={{
                 background: '#252525',
                 color: '#c9a84c',
@@ -295,14 +296,28 @@ export default function ProjectDetail() {
             height: '100%', minHeight: 480,
             background: '#0a0a0a',
             gap: 12,
+            position: 'relative',
           }}>
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ opacity: 0.2 }}>
-              <rect x="6" y="10" width="36" height="28" rx="2" stroke="#c9a84c" strokeWidth="2"/>
-              <path d="M6 18h36" stroke="#c9a84c" strokeWidth="2"/>
-              <path d="M18 10v8M30 10v8" stroke="#c9a84c" strokeWidth="2"/>
-            </svg>
-            <p style={{ color: '#555', fontSize: 15, fontWeight: 500, margin: 0 }}>No models in this project</p>
-            {isAdmin && <p style={{ color: '#444', fontSize: 13, margin: 0 }}>Upload a .glb file to get started</p>}
+            <div style={{
+              position: 'absolute', inset: 0, opacity: 0.3,
+              backgroundImage: 'linear-gradient(rgba(201,168,76,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.05) 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+            }}></div>
+            <div style={{
+              width: 72, height: 72, borderRadius: 14,
+              background: 'rgba(201,168,76,0.05)',
+              border: '1px solid rgba(201,168,76,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative', zIndex: 1,
+            }}>
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <path d="M16 3L29 10.5v15L16 29 3 25.5v-15L16 3z" stroke="#c9a84c" strokeWidth="1.5" fill="none"/>
+                <path d="M16 3v20M3 10.5l13 5 13-5M16 23v6M3 25.5l13 5 13-5" stroke="#c9a84c" strokeWidth="1.5"/>
+              </svg>
+            </div>
+            <p style={{ color: '#666', fontSize: 15, fontWeight: 500, margin: 0, position: 'relative', zIndex: 1 }}>No models uploaded yet</p>
+            {isAdmin && <p style={{ color: '#3a3a3a', fontSize: 12, margin: 0, position: 'relative', zIndex: 1 }}>Upload a .glb or .gltf file below to get started</p>}
+            {!isAdmin && <p style={{ color: '#3a3a3a', fontSize: 12, margin: 0, position: 'relative', zIndex: 1 }}>This project has no 3D models yet</p>}
           </div>
         )}
       </div>
@@ -345,6 +360,25 @@ export default function ProjectDetail() {
               </p>
               <p style={{ color: '#444', fontSize: 11, margin: '2px 0 0' }}>3D model files only · Max 50MB</p>
             </div>
+            {uploading && (
+            <div style={{
+              width: '100%',
+              height: 3,
+              background: 'rgba(201,168,76,0.1)',
+              borderRadius: 2,
+              overflow: 'hidden',
+              marginTop: 8,
+            }}>
+              <div style={{
+                width: '60%',
+                height: '100%',
+                background: '#c9a84c',
+                borderRadius: 2,
+                animation: 'uploadProgress 2s ease-in-out infinite',
+              }}></div>
+            </div>
+          )}
+          {!uploading && (
             <label style={{
               background: 'rgba(201,168,76,0.1)',
               border: '1px solid rgba(201,168,76,0.25)',
@@ -363,9 +397,11 @@ export default function ProjectDetail() {
                 accept=".glb,.gltf"
                 onChange={handleFileInput}
                 disabled={uploading}
+                aria-label="Upload 3D model file"
                 style={{ display: 'none' }}
               />
             </label>
+          )}
           </div>
         </div>
       )}
