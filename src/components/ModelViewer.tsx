@@ -15,8 +15,16 @@ import * as THREE from 'three'
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ViewMode = 'orbit' | 'interior'
 
-// ─── Model loader with auto-center ───────────────────────────────────────────
-function GLTFModel({ url, onLoad }: { url: string; onLoad?: () => void }) {
+// ─── Model loader with auto-center + center reporting ────────────────────────
+function GLTFModel({
+  url,
+  onLoad,
+  onCenterCalculated,
+}: {
+  url: string
+  onLoad?: () => void
+  onCenterCalculated?: (center: THREE.Vector3) => void
+}) {
   const { scene } = useGLTF(url)
 
   useEffect(() => {
@@ -24,87 +32,129 @@ function GLTFModel({ url, onLoad }: { url: string; onLoad?: () => void }) {
     const center = box.getCenter(new THREE.Vector3())
     const size = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z)
+
+    // Center at origin, scale so max dimension = 5 units
     scene.position.sub(center)
     if (maxDim > 0) scene.scale.setScalar(5 / maxDim)
+
+    // Re-measure after scaling
     const newBox = new THREE.Box3().setFromObject(scene)
-    scene.position.y -= newBox.getCenter(new THREE.Vector3()).y
+    const newCenter = newBox.getCenter(new THREE.Vector3())
+
+    // Ground the model: shift so the bounding-box center sits at y=0
+    scene.position.y -= newCenter.y
+
+    // Report the final geometric center for OrbitControls target
+    const finalCenter = new THREE.Vector3()
+    newBox.getCenter(finalCenter)
+    onCenterCalculated?.(finalCenter)
+
     onLoad?.()
-  }, [scene, onLoad])
+  }, [scene, onLoad, onCenterCalculated])
 
   return <primitive object={scene} />
 }
 
-// ─── Camera controller — animated snap to preset ───────────────────────────────
-function CameraController({ viewMode }: { viewMode: ViewMode }) {
+// ─── Camera + OrbitControls controller ────────────────────────────────────────
+// Runs INSIDE Canvas so it has access to the model center via closure
+function CameraController({
+  viewMode,
+  modelCenter,
+}: {
+  viewMode: ViewMode
+  modelCenter: THREE.Vector3 | null
+}) {
   const { camera } = useThree()
-  const targetRef = useRef({ set: false, tx: 6, ty: 4, tz: 6, lx: 0, ly: 0, lz: 0 })
-  const prevMode = useRef(viewMode)
+  const orbitRef = useRef<any>(null)
 
   useEffect(() => {
-    const t = targetRef.current
-    if (viewMode === 'interior') {
-      t.tx = 0; t.ty = 1.6; t.tz = 1.2
-      t.lx = 0; t.ly = 1.6; t.lz = 50
-    } else {
-      t.tx = 6; t.ty = 4; t.tz = 6
-      t.lx = 0; t.ly = 0; t.lz = 0
+    const presets = {
+      orbit:    { pos: new THREE.Vector3(6, 3.5, 6),   target: new THREE.Vector3(0, 1.5, 0) },
+      interior: { pos: new THREE.Vector3(0, 1.6, 1.2), target: new THREE.Vector3(0, 1.6, 0) },
     }
-    t.set = prevMode.current !== viewMode
-    prevMode.current = viewMode
-  }, [viewMode])
+    const p = presets[viewMode]
+    // Use actual model center if available, otherwise preset fallback
+    const target = modelCenter ? modelCenter.clone() : p.target.clone()
 
-  return null
+    const lerpFactor = 0.07
+    const lerp = () => {
+      camera.position.lerp(p.pos, lerpFactor)
+      if (orbitRef.current) {
+        orbitRef.current.target.lerp(target, lerpFactor)
+        orbitRef.current.update()
+      }
+      if (camera.position.distanceTo(p.pos) > 0.01) {
+        requestAnimationFrame(lerp)
+      }
+    }
+    lerp()
+  }, [viewMode, modelCenter, camera])
+
+  return (
+    <OrbitControls
+      ref={orbitRef}
+      enableDamping
+      dampingFactor={0.08}
+      minDistance={viewMode === 'interior' ? 0.1 : 1}
+      maxDistance={viewMode === 'interior' ? 5 : 150}
+      minPolarAngle={viewMode === 'interior' ? Math.PI / 4 : 0}
+      maxPolarAngle={viewMode === 'interior' ? Math.PI - Math.PI / 4 : Math.PI / 2 - 0.02}
+      target={modelCenter ? [modelCenter.x, modelCenter.y, modelCenter.z] : [0, 1.5, 0]}
+    />
+  )
 }
 
 // ─── Scene content ─────────────────────────────────────────────────────────────
 function SceneContent({
   url,
   viewMode,
+  modelCenter,
   onModelLoad,
+  onCenterCalculated,
 }: {
   url: string
   viewMode: ViewMode
+  modelCenter: THREE.Vector3 | null
   onModelLoad: () => void
+  onCenterCalculated?: (center: THREE.Vector3) => void
 }) {
   return (
     <>
-      <CameraController viewMode={viewMode} />
+      {/* Camera + orbit — inside Canvas so it can close over modelCenter */}
+      <CameraController viewMode={viewMode} modelCenter={modelCenter} />
+
       <Environment preset="city" />
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 15, 10]} intensity={1.0} castShadow />
       <directionalLight position={[-8, 10, -8]} intensity={0.3} />
 
-      {viewMode === 'orbit' && (
-        <Grid
-          args={[30, 30]}
-          cellSize={0.5}
-          cellThickness={0.5}
-          cellColor="#2a2a2a"
-          sectionSize={5}
-          sectionThickness={1}
-          sectionColor="#c9a84c"
-          fadeDistance={40}
-          fadeStrength={1.2}
-          followCamera={false}
-          infiniteGrid
-        />
-      )}
-
       <Suspense fallback={null}>
-        <GLTFModel url={url} onLoad={onModelLoad} />
+        <GLTFModel url={url} onLoad={onModelLoad} onCenterCalculated={onCenterCalculated} />
       </Suspense>
 
-      <OrbitControls
-        enableDamping
-        dampingFactor={0.08}
-        minDistance={viewMode === 'interior' ? 0.1 : 1}
-        maxDistance={viewMode === 'interior' ? 5 : 150}
-        minPolarAngle={viewMode === 'interior' ? Math.PI / 4 : 0}
-        maxPolarAngle={viewMode === 'interior' ? Math.PI - Math.PI / 4 : Math.PI / 2 - 0.02}
-        target={viewMode === 'interior' ? [0, 1.6, 0] : [0, 0, 0]}
+      {/* Gold accent grid */}
+      <Grid
+        args={[40, 40]}
+        position={[0, 0, 0]}
+        cellColor="rgba(201,168,76,0.15)"
+        sectionColor="rgba(201,168,76,0.25)"
+        cellSize={1}
+        sectionSize={5}
+        fadeDistance={30}
+        fadeStrength={1.5}
+        followCamera={false}
+        infiniteGrid={true}
       />
 
-      {/* Branded viewcube — gold labels on dark faces */}
+      {/* Shadow-catching floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
+        <planeGeometry args={[100, 100]} />
+        <shadowMaterial opacity={0.15} />
+      </mesh>
+
+      <hemisphereLight skyColor="#c9a84c" groundColor="#1a1a1a" intensity={0.15} />
+
+      {/* Branded viewcube */}
       <GizmoHelper alignment="bottom-right" margin={[100, 100]}>
         <GizmoViewcube
           color="#c9a84c"
@@ -135,24 +185,21 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
   const [loaded, setLoaded] = useState(false)
   const [showHint, setShowHint] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [hint, setHint] = useState('Press F for fullscreen · Esc to exit')
+  const [modelCenter, setModelCenter] = useState<THREE.Vector3 | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasWrapRef = useRef<HTMLDivElement>(null)
 
-  // Hide fullscreen hint after 3s
   useEffect(() => {
     const t = setTimeout(() => setShowHint(false), 3000)
     return () => clearTimeout(t)
   }, [])
 
-  // Fullscreen change listener
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
 
-  // Keyboard shortcut: F = fullscreen, Escape = exit
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && document.fullscreenElement) {
@@ -170,6 +217,9 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
   }, [])
 
   const handleModelLoad = useCallback(() => setLoaded(true), [])
+  const handleCenterCalculated = useCallback((center: THREE.Vector3) => {
+    setModelCenter(center)
+  }, [])
   const toggleMode = useCallback(() => {
     setLoaded(false)
     setViewMode((v) => (v === 'orbit' ? 'interior' : 'orbit'))
@@ -177,50 +227,33 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      {/* Fullscreen button — bottom left */}
+
+      {/* Fullscreen button */}
       <button
         onClick={() => toggleFullscreen(canvasWrapRef.current)}
         title="Toggle fullscreen (F)"
         style={{
-          position: 'absolute',
-          bottom: 14,
-          left: 14,
-          zIndex: 30,
+          position: 'absolute', bottom: 14, left: 14, zIndex: 30,
           background: 'rgba(16,16,16,0.82)',
           border: '1px solid rgba(201,168,76,0.3)',
-          borderRadius: 6,
-          width: 34,
-          height: 34,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          color: isFullscreen ? '#c9a84c' : '#888',
-          transition: 'all 0.2s',
-          backdropFilter: 'blur(8px)',
-          padding: 0,
+          borderRadius: 6, width: 34, height: 34,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', color: isFullscreen ? '#c9a84c' : '#888',
+          transition: 'all 0.2s', backdropFilter: 'blur(8px)', padding: 0,
         }}
       >
-        {/* Expand icon */}
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M1 5V1h4M9 1H13V5M13 9V13H9M5 13H1V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       </button>
 
-      {/* Mode toolbar — top center */}
+      {/* Mode toolbar */}
       <div style={{
-        position: 'absolute',
-        top: 12,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        gap: 6,
-        zIndex: 20,
+        position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
+        display: 'flex', gap: 6, zIndex: 20,
         background: 'rgba(16,16,16,0.85)',
         border: '1px solid rgba(201,168,76,0.25)',
-        borderRadius: 8,
-        padding: '5px 8px',
-        backdropFilter: 'blur(10px)',
+        borderRadius: 8, padding: '5px 8px', backdropFilter: 'blur(10px)',
       }}>
         <button
           onClick={() => { setLoaded(false); setViewMode('orbit') }}
@@ -228,12 +261,8 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
             background: viewMode === 'orbit' ? '#c9a84c' : 'transparent',
             color: viewMode === 'orbit' ? '#0a0a0a' : '#888',
             border: '1px solid ' + (viewMode === 'orbit' ? '#c9a84c' : 'rgba(201,168,76,0.2)'),
-            borderRadius: 5,
-            padding: '5px 14px',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
+            borderRadius: 5, padding: '5px 14px', fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.2s',
           }}
         >
           Orbit
@@ -244,12 +273,8 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
             background: viewMode === 'interior' ? '#c9a84c' : 'transparent',
             color: viewMode === 'interior' ? '#0a0a0a' : '#888',
             border: '1px solid ' + (viewMode === 'interior' ? '#c9a84c' : 'rgba(201,168,76,0.2)'),
-            borderRadius: 5,
-            padding: '5px 14px',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
+            borderRadius: 5, padding: '5px 14px', fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.2s',
           }}
         >
           Interior
@@ -259,18 +284,13 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
       {/* Loading overlay */}
       {!loaded && (
         <div style={{
-          position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0,
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(10,10,10,0.85)',
-          zIndex: 15,
-          gap: 16,
+          background: 'rgba(10,10,10,0.85)', zIndex: 15, gap: 16,
         }}>
           <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: 8,
+            width: 48, height: 48, borderRadius: 8,
             border: '3px solid rgba(201,168,76,0.2)',
             borderTopColor: '#c9a84c',
             animation: 'spin 1s linear infinite',
@@ -282,45 +302,27 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
         </div>
       )}
 
-      {/* Interior view hint */}
+      {/* Bottom hints */}
       {viewMode === 'interior' && (
         <div style={{
-          position: 'absolute',
-          bottom: 14,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 20,
-          background: 'rgba(16,16,16,0.8)',
-          border: '1px solid rgba(201,168,76,0.2)',
-          borderRadius: 6,
-          padding: '6px 16px',
-          backdropFilter: 'blur(8px)',
-          pointerEvents: 'none',
-          opacity: showHint ? 1 : 0,
-          transition: 'opacity 0.5s',
+          position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 20, background: 'rgba(16,16,16,0.8)',
+          border: '1px solid rgba(201,168,76,0.2)', borderRadius: 6,
+          padding: '6px 16px', backdropFilter: 'blur(8px)',
+          pointerEvents: 'none', opacity: showHint ? 1 : 0, transition: 'opacity 0.5s',
         }}>
           <p style={{ color: '#888', fontSize: 11, margin: 0, textAlign: 'center', whiteSpace: 'nowrap' }}>
             Drag to look around · Scroll to zoom · Press F for fullscreen
           </p>
         </div>
       )}
-
-      {/* Orbit mode keyboard hint */}
       {viewMode === 'orbit' && showHint && (
         <div style={{
-          position: 'absolute',
-          bottom: 14,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 20,
-          background: 'rgba(16,16,16,0.8)',
-          border: '1px solid rgba(201,168,76,0.2)',
-          borderRadius: 6,
-          padding: '6px 16px',
-          backdropFilter: 'blur(8px)',
-          pointerEvents: 'none',
-          opacity: showHint ? 1 : 0,
-          transition: 'opacity 0.5s',
+          position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 20, background: 'rgba(16,16,16,0.8)',
+          border: '1px solid rgba(201,168,76,0.2)', borderRadius: 6,
+          padding: '6px 16px', backdropFilter: 'blur(8px)',
+          pointerEvents: 'none', opacity: showHint ? 1 : 0, transition: 'opacity 0.5s',
         }}>
           <p style={{ color: '#888', fontSize: 11, margin: 0, textAlign: 'center', whiteSpace: 'nowrap' }}>
             Drag to orbit · Scroll to zoom · Press F for fullscreen
@@ -328,20 +330,26 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
         </div>
       )}
 
-      {/* Canvas wrapper — this is what gets fullscreened */}
+      {/* Canvas */}
       <div
         ref={canvasWrapRef}
         onClick={() => setShowHint(false)}
         style={{ width: '100%', height: '100%', position: 'relative', cursor: 'grab', minHeight: 480 }}
       >
         <Canvas
-          camera={{ position: viewMode === 'interior' ? [0, 1.6, 1.2] : [6, 4, 6], fov: 45, near: 0.1, far: 500 }}
+          camera={{ position: viewMode === 'interior' ? [0, 1.6, 1.2] : [6, 3.5, 6], fov: 45, near: 0.1, far: 500 }}
           dpr={[1, 2]}
           shadows
           gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
           style={{ background: '#0a0a0a' }}
         >
-          <SceneContent url={modelUrl} viewMode={viewMode} onModelLoad={handleModelLoad} />
+          <SceneContent
+            url={modelUrl}
+            viewMode={viewMode}
+            modelCenter={modelCenter}
+            onModelLoad={handleModelLoad}
+            onCenterCalculated={handleCenterCalculated}
+          />
         </Canvas>
       </div>
     </div>
