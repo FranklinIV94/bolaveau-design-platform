@@ -27,7 +27,13 @@ export default function SignInPage() {
     if (result?.error) {
       setError('Invalid email or password')
     } else {
-      router.push('/')
+      // Redirect admins to admin dashboard, clients to projects
+      const session = await fetch('/api/auth/session').then(r => r.json())
+      if (session?.user?.role === 'admin') {
+        router.push('/admin/projects')
+      } else {
+        router.push('/projects')
+      }
     }
   }
 

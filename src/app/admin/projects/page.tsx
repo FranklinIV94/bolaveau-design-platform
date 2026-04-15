@@ -34,7 +34,7 @@ export default function AdminProjects() {
 
   useEffect(() => {
     if (status === 'loading') return
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    if (!session || (session.user as any)?.role !== 'admin') {
       router.push('/auth/signin')
       return
     }

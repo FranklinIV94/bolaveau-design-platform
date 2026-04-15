@@ -12,7 +12,7 @@ export default function Home() {
     if (status === 'loading') return
     if (!session) {
       router.push('/auth/signin')
-    } else if ((session.user as any)?.role === 'ADMIN') {
+    } else if ((session.user as any)?.role === 'admin') {
       router.push('/admin/projects')
     } else {
       router.push('/projects')
