@@ -7,7 +7,6 @@ import dynamic from 'next/dynamic'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
-// Dynamic import for the 3D viewer to avoid SSR issues
 const ModelViewer = dynamic(() => import('@/components/ModelViewer'), { ssr: false })
 
 interface Project {
@@ -37,7 +36,7 @@ export default function ProjectDetail() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
-
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const isAdmin = (session?.user as any)?.role?.toLowerCase() === 'admin'
 
   useEffect(() => {
@@ -59,6 +58,9 @@ export default function ProjectDetail() {
     setProject(projData.project || null)
     setModels(modelsData.models || [])
     setLoading(false)
+    if (modelsData.models?.length > 0 && !selectedModel) {
+      setSelectedModel(modelsData.models[modelsData.models.length - 1])
+    }
   }
 
   const handleUpload = async (file: File) => {
@@ -103,7 +105,8 @@ export default function ProjectDetail() {
   }
 
   const latestModel = models.length > 0 ? models[models.length - 1] : null
-  const modelUrl = latestModel ? `/api/models/file?path=${encodeURIComponent(latestModel.storage_path)}` : null
+  const activeModel = selectedModel || latestModel
+  const modelUrl = activeModel ? `/api/models/file?path=${encodeURIComponent(activeModel.storage_path)}` : null
 
   if (loading) {
     return (
@@ -140,6 +143,7 @@ export default function ProjectDetail() {
           display: 'flex',
           alignItems: 'center',
           gap: 16,
+          flexWrap: 'wrap',
         }}>
           <button onClick={() => router.push('/projects')} style={{ color: '#c9a84c', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>
             ← Back
@@ -158,20 +162,78 @@ export default function ProjectDetail() {
             {project.status}
           </span>
           {project.address && <span style={{ color: '#888', fontSize: 12 }}>{project.address}</span>}
-          {project.description && <span style={{ color: '#666', fontSize: 12, marginLeft: 8 }}>{project.description}</span>}
+          {models.length > 1 && (
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#666', fontSize: 12 }}>Model:</span>
+              <select
+                value={activeModel?.id || ''}
+                onChange={(e) => {
+                  const m = models.find(m => m.id === e.target.value)
+                  setSelectedModel(m || null)
+                }}
+                style={{
+                  background: '#2a2a2a',
+                  color: '#c9a84c',
+                  border: '1px solid rgba(201,168,76,0.3)',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                {models.map(m => (
+                  <option key={m.id} value={m.id}>{m.filename}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
-        {/* 3D Viewer */}
-        <div style={{ flex: 1, position: 'relative', minHeight: 400 }}>
+        {/* 3D Viewer — expands to fill available space */}
+        <div style={{ flex: 1, position: 'relative', minHeight: 480, display: 'flex', flexDirection: 'column' }}>
           {modelUrl ? (
-            <ModelViewer modelUrl={modelUrl} />
+            <div style={{ flex: 1, position: 'relative', minHeight: 480 }}>
+              <ModelViewer key={activeModel?.id} modelUrl={modelUrl} />
+              {models.length > 1 && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: 16,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  display: 'flex',
+                  gap: 6,
+                  zIndex: 20,
+                }}>
+                  {models.map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => setSelectedModel(m)}
+                      style={{
+                        background: (activeModel?.id === m.id) ? '#c9a84c' : 'rgba(26,26,26,0.85)',
+                        color: (activeModel?.id === m.id) ? '#0a0a0a' : '#888',
+                        border: '1px solid ' + ((activeModel?.id === m.id) ? '#c9a84c' : 'rgba(201,168,76,0.25)'),
+                        borderRadius: 6,
+                        padding: '5px 14px',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                        transition: 'all 0.15s',
+                        backdropFilter: 'blur(8px)',
+                      }}
+                    >
+                      {m.filename.replace('.glb', '').replace(/_/g, ' ')}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               height: '100%',
-              minHeight: 400,
+              minHeight: 480,
               background: '#0a0a0a',
             }}>
               <div style={{ textAlign: 'center' }}>
@@ -222,16 +284,22 @@ export default function ProjectDetail() {
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {models.map((m) => (
-                <div key={m.id} style={{
-                  background: '#1a1a1a',
-                  border: '1px solid rgba(201,168,76,0.1)',
-                  borderRadius: 6,
-                  padding: '8px 14px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}>
-                  <span style={{ color: '#ccc', fontSize: 13 }}>{m.filename}</span>
+                <div
+                  key={m.id}
+                  onClick={() => setSelectedModel(m)}
+                  style={{
+                    background: (activeModel?.id === m.id) ? 'rgba(201,168,76,0.08)' : '#1a1a1a',
+                    border: '1px solid ' + ((activeModel?.id === m.id) ? 'rgba(201,168,76,0.4)' : 'rgba(201,168,76,0.1)',
+                    borderRadius: 6,
+                    padding: '8px 14px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: models.length > 1 ? 'pointer' : 'default',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <span style={{ color: (activeModel?.id === m.id) ? '#c9a84c' : '#ccc', fontSize: 13 }}>{m.filename}</span>
                   <span style={{ color: '#555', fontSize: 11 }}>
                     {(m.file_size / 1024 / 1024).toFixed(1)} MB · {new Date(m.created_at).toLocaleDateString()}
                   </span>
