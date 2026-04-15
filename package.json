@@ -9,29 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@babel/preset-env": "^7.29.2",
-    "@babel/preset-react": "^7.28.5",
-    "@babel/preset-typescript": "^7.28.5",
-    "@pascal-app/core": "^0.5.0",
-    "@pascal-app/editor": "^0.4.0",
-    "@pascal-app/viewer": "^0.5.0",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^9.6.0",
-    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.2",
-    "@types/bcryptjs": "^2.4.6",
-    "babel-loader": "^10.1.1",
     "bcryptjs": "^3.0.3",
     "next": "^15.5.15",
     "next-auth": "^4.24.14",
-    "next-transpile-modules": "^10.0.1",
-    "pg": "^8.20.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "three": "^0.183.0",
-    "vercel": "^51.1.0"
+    "three": "^0.183.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",
