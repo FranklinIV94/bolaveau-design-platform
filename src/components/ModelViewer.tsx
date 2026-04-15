@@ -70,13 +70,16 @@ function CameraController({
   useEffect(() => {
     const presets = {
       orbit:    { pos: new THREE.Vector3(6, 3.5, 6),   target: new THREE.Vector3(0, 1.5, 0) },
-      interior: { pos: new THREE.Vector3(0, 1.6, 1.2), target: new THREE.Vector3(0, 1.6, 0) },
+      interior: { pos: new THREE.Vector3(0, 2.2, 4.5),  target: new THREE.Vector3(0, 1.6, 0) },
     }
     const p = presets[viewMode]
-    // Use actual model center if available, otherwise preset fallback
-    const target = modelCenter ? modelCenter.clone() : p.target.clone()
+    // Orbit mode: look at the model's center so it sits mid-frame
+    // Interior mode: fixed eye-level preset, ignore modelCenter to avoid jumps
+    const target = viewMode === 'orbit' && modelCenter
+      ? modelCenter.clone()
+      : p.target.clone()
 
-    const lerpFactor = 0.07
+    const lerpFactor = viewMode === 'interior' ? 0.12 : 0.07
     const lerp = () => {
       camera.position.lerp(p.pos, lerpFactor)
       if (orbitRef.current) {
@@ -88,7 +91,9 @@ function CameraController({
       }
     }
     lerp()
-  }, [viewMode, modelCenter, camera])
+    // Only re-run when mode changes — NOT when modelCenter updates
+    // This prevents interior mode from jumping when the model loads
+  }, [viewMode, camera])
 
   return (
     <OrbitControls
@@ -99,7 +104,13 @@ function CameraController({
       maxDistance={viewMode === 'interior' ? 5 : 150}
       minPolarAngle={viewMode === 'interior' ? Math.PI / 4 : 0}
       maxPolarAngle={viewMode === 'interior' ? Math.PI - Math.PI / 4 : Math.PI / 2 - 0.02}
-      target={modelCenter ? [modelCenter.x, modelCenter.y, modelCenter.z] : [0, 1.5, 0]}
+      target={
+        viewMode === 'interior'
+          ? [0, 1.6, 0]
+          : modelCenter
+            ? [modelCenter.x, modelCenter.y, modelCenter.z]
+            : [0, 1.5, 0]
+      }
     />
   )
 }
