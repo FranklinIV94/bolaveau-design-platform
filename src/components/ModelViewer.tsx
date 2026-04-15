@@ -15,15 +15,17 @@ import * as THREE from 'three'
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ViewMode = 'orbit' | 'interior'
 
-// ─── Model loader with auto-center + center reporting ────────────────────────
+// ─── Model loader with auto-center + ceiling detection ───────────────────────
 function GLTFModel({
   url,
   onLoad,
   onCenterCalculated,
+  onSceneExtracted,
 }: {
   url: string
   onLoad?: () => void
   onCenterCalculated?: (center: THREE.Vector3) => void
+  onSceneExtracted?: (scene: THREE.Group) => void
 }) {
   const { scene } = useGLTF(url)
 
@@ -41,22 +43,24 @@ function GLTFModel({
     const newBox = new THREE.Box3().setFromObject(scene)
     const newCenter = newBox.getCenter(new THREE.Vector3())
 
-    // Ground the model: shift so the bounding-box center sits at y=0
+    // Ground the model: shift so bounding-box center sits at y=0
     scene.position.y -= newCenter.y
 
-    // Report the final geometric center for OrbitControls target
+    // Report the final geometric center
     const finalCenter = new THREE.Vector3()
     newBox.getCenter(finalCenter)
     onCenterCalculated?.(finalCenter)
 
+    // Pass the scene to the parent so we can traverse it for ceiling toggle
+    onSceneExtracted?.(scene)
+
     onLoad?.()
-  }, [scene, onLoad, onCenterCalculated])
+  }, [scene, onLoad, onCenterCalculated, onSceneExtracted])
 
   return <primitive object={scene} />
 }
 
-// ─── Camera + OrbitControls controller ────────────────────────────────────────
-// Runs INSIDE Canvas so it has access to the model center via closure
+// ─── Camera + OrbitControls controller ───────────────────────────────────────
 function CameraController({
   viewMode,
   modelCenter,
@@ -68,18 +72,38 @@ function CameraController({
   const orbitRef = useRef<any>(null)
 
   useEffect(() => {
+    // Orbit: lower camera height for flat/room models → 30-45° angle, not bird's-eye
+    // Interior: fixed eye-level preset
     const presets = {
-      orbit:    { pos: new THREE.Vector3(6, 3.5, 6),   target: new THREE.Vector3(0, 1.5, 0) },
-      interior: { pos: new THREE.Vector3(0, 2.2, 4.5),  target: new THREE.Vector3(0, 1.6, 0) },
+      orbit: {
+        // Lower Y so camera is ~30° above horizontal, not 40°+ down
+        pos: new THREE.Vector3(7, 2.5, 7),
+        // Clamp target Y to a mid-room height so camera looks INTO the room, not at the ceiling
+        target: new THREE.Vector3(0, 1.0, 0),
+      },
+      interior: {
+        pos: new THREE.Vector3(0, 2.2, 4.5),
+        target: new THREE.Vector3(0, 1.6, 0),
+      },
     }
+
     const p = presets[viewMode]
-    // Orbit mode: look at the model's center so it sits mid-frame
-    // Interior mode: fixed eye-level preset, ignore modelCenter to avoid jumps
-    const target = viewMode === 'orbit' && modelCenter
-      ? modelCenter.clone()
-      : p.target.clone()
+
+    // For orbit mode with a known model center: clamp the target Y to prevent
+    // bird's-eye on flat/room models. Use a weighted blend so tall objects still center.
+    let target = p.target.clone()
+    if (viewMode === 'orbit' && modelCenter) {
+      // Blend model center Y down toward a comfortable viewing height
+      // 70% mid-room height + 30% actual center → works for rooms AND furniture
+      target = new THREE.Vector3(
+        modelCenter.x,
+        modelCenter.y * 0.3 + 1.0 * 0.7,
+        modelCenter.z
+      )
+    }
 
     const lerpFactor = viewMode === 'interior' ? 0.12 : 0.07
+
     const lerp = () => {
       camera.position.lerp(p.pos, lerpFactor)
       if (orbitRef.current) {
@@ -91,8 +115,8 @@ function CameraController({
       }
     }
     lerp()
-    // Only re-run when mode changes — NOT when modelCenter updates
-    // This prevents interior mode from jumping when the model loads
+    // Only re-run when mode changes — NOT on modelCenter updates
+    // This prevents interior mode from jumping when the model finishes loading
   }, [viewMode, camera])
 
   return (
@@ -108,8 +132,12 @@ function CameraController({
         viewMode === 'interior'
           ? [0, 1.6, 0]
           : modelCenter
-            ? [modelCenter.x, modelCenter.y, modelCenter.z]
-            : [0, 1.5, 0]
+            ? [
+                modelCenter.x,
+                modelCenter.y * 0.3 + 1.0 * 0.7, // same clamped Y in the prop too
+                modelCenter.z,
+              ]
+            : [0, 1.0, 0]
       }
     />
   )
@@ -122,16 +150,17 @@ function SceneContent({
   modelCenter,
   onModelLoad,
   onCenterCalculated,
+  onSceneExtracted,
 }: {
   url: string
   viewMode: ViewMode
   modelCenter: THREE.Vector3 | null
   onModelLoad: () => void
   onCenterCalculated?: (center: THREE.Vector3) => void
+  onSceneExtracted?: (scene: THREE.Group) => void
 }) {
   return (
     <>
-      {/* Camera + orbit — inside Canvas so it can close over modelCenter */}
       <CameraController viewMode={viewMode} modelCenter={modelCenter} />
 
       <Environment preset="city" />
@@ -140,10 +169,14 @@ function SceneContent({
       <directionalLight position={[-8, 10, -8]} intensity={0.3} />
 
       <Suspense fallback={null}>
-        <GLTFModel url={url} onLoad={onModelLoad} onCenterCalculated={onCenterCalculated} />
+        <GLTFModel
+          url={url}
+          onLoad={onModelLoad}
+          onCenterCalculated={onCenterCalculated}
+          onSceneExtracted={onSceneExtracted}
+        />
       </Suspense>
 
-      {/* Gold accent grid */}
       <Grid
         args={[40, 40]}
         position={[0, 0, 0]}
@@ -157,7 +190,6 @@ function SceneContent({
         infiniteGrid={true}
       />
 
-      {/* Shadow-catching floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
         <planeGeometry args={[100, 100]} />
         <shadowMaterial opacity={0.15} />
@@ -165,7 +197,6 @@ function SceneContent({
 
       <hemisphereLight skyColor="#c9a84c" groundColor="#1a1a1a" intensity={0.15} />
 
-      {/* Branded viewcube */}
       <GizmoHelper alignment="bottom-right" margin={[100, 100]}>
         <GizmoViewcube
           color="#c9a84c"
@@ -197,6 +228,11 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
   const [showHint, setShowHint] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [modelCenter, setModelCenter] = useState<THREE.Vector3 | null>(null)
+  const [cutaway, setCutaway] = useState(false)
+  // Hidden ceiling meshes — stored so we can restore them when cutaway is off
+  const [hiddenMeshes, setHiddenMeshes] = useState<THREE.Mesh[]>([])
+  // The actual scene root — used for ceiling traversal
+  const modelSceneRef = useRef<THREE.Group | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasWrapRef = useRef<HTMLDivElement>(null)
 
@@ -227,14 +263,70 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // ── Ceiling toggle ──────────────────────────────────────────────────────────
+  const handleSceneExtracted = useCallback((scene: THREE.Group) => {
+    modelSceneRef.current = scene
+
+    if (!scene) return
+
+    const box = new THREE.Box3().setFromObject(scene)
+    const size = box.getSize(new THREE.Vector3())
+    const maxY = box.max.y
+    const midY = box.min.y + size.y * 0.75 // top 25% of bounding box
+
+    const ceilingMeshes: THREE.Mesh[] = []
+
+    scene.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return
+
+      // Heuristic 1: mesh name contains ceiling/roof/top
+      const name = child.name.toLowerCase()
+      const isNamedCeiling = /ceiling|roof|top|shausche|cap|overside/.test(name)
+
+      // Heuristic 2: mesh Y center is in the top 25% of the bounding box
+      const meshBox = new THREE.Box3().setFromObject(child)
+      const meshCenterY = meshBox.getCenter(new THREE.Vector3()).y
+      const isHighMesh = meshCenterY >= midY
+
+      // Heuristic 3: mesh is horizontal (wide and flat — likely a ceiling panel)
+      const meshSize = meshBox.getSize(new THREE.Vector3())
+      const isFlatHorizontal = meshSize.y < meshSize.x * 0.15 && meshSize.y < meshSize.z * 0.15
+
+      if (isNamedCeiling || isHighMesh || isFlatHorizontal) {
+        ceilingMeshes.push(child)
+      }
+    })
+
+    setHiddenMeshes(ceilingMeshes)
+  }, [])
+
+  const toggleCutaway = useCallback(() => {
+    const scene = modelSceneRef.current
+    if (!scene || hiddenMeshes.length === 0) return
+
+    if (!cutaway) {
+      // Hide ceiling meshes
+      hiddenMeshes.forEach((m) => { m.visible = false })
+    } else {
+      // Restore ceiling meshes
+      hiddenMeshes.forEach((m) => { m.visible = true })
+    }
+    setCutaway((c) => !c)
+  }, [cutaway, hiddenMeshes])
+
   const handleModelLoad = useCallback(() => setLoaded(true), [])
+
   const handleCenterCalculated = useCallback((center: THREE.Vector3) => {
     setModelCenter(center)
   }, [])
-  const toggleMode = useCallback(() => {
-    setLoaded(false)
-    setViewMode((v) => (v === 'orbit' ? 'interior' : 'orbit'))
-  }, [])
+
+  const switchToMode = (mode: ViewMode) => {
+    // Don't re-trigger the loading overlay when switching modes —
+    // the model is already loaded. We only need to reposition the camera.
+    if (mode !== viewMode) {
+      setViewMode(mode)
+    }
+  }
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -267,7 +359,7 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
         borderRadius: 8, padding: '5px 8px', backdropFilter: 'blur(10px)',
       }}>
         <button
-          onClick={() => { setLoaded(false); setViewMode('orbit') }}
+          onClick={() => switchToMode('orbit')}
           style={{
             background: viewMode === 'orbit' ? '#c9a84c' : 'transparent',
             color: viewMode === 'orbit' ? '#0a0a0a' : '#888',
@@ -279,7 +371,7 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
           Orbit
         </button>
         <button
-          onClick={() => { setLoaded(false); setViewMode('interior') }}
+          onClick={() => switchToMode('interior')}
           style={{
             background: viewMode === 'interior' ? '#c9a84c' : 'transparent',
             color: viewMode === 'interior' ? '#0a0a0a' : '#888',
@@ -289,6 +381,22 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
           }}
         >
           Interior
+        </button>
+        {/* Cutaway / ceiling toggle */}
+        <button
+          onClick={toggleCutaway}
+          title={cutaway ? 'Show ceiling' : 'Hide ceiling (cutaway view)'}
+          style={{
+            background: cutaway ? '#c9a84c' : 'transparent',
+            color: cutaway ? '#0a0a0a' : '#888',
+            border: '1px solid ' + (cutaway ? '#c9a84c' : 'rgba(201,168,76,0.2)'),
+            borderRadius: 5, padding: '5px 14px', fontSize: 12, fontWeight: 600,
+            cursor: hiddenMeshes.length === 0 ? 'not-allowed' : 'pointer',
+            opacity: hiddenMeshes.length === 0 ? 0.4 : 1,
+            transition: 'all 0.2s',
+          }}
+        >
+          {cutaway ? 'Ceiling On' : 'Cutaway'}
         </button>
       </div>
 
@@ -348,7 +456,7 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
         style={{ width: '100%', height: '100%', position: 'relative', cursor: 'grab', minHeight: 480 }}
       >
         <Canvas
-          camera={{ position: viewMode === 'interior' ? [0, 1.6, 1.2] : [6, 3.5, 6], fov: 45, near: 0.1, far: 500 }}
+          camera={{ position: viewMode === 'interior' ? [0, 2.2, 4.5] : [7, 2.5, 7], fov: 45, near: 0.1, far: 500 }}
           dpr={[1, 2]}
           shadows
           gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
@@ -360,6 +468,7 @@ export default function ModelViewer({ modelUrl }: { modelUrl: string }) {
             modelCenter={modelCenter}
             onModelLoad={handleModelLoad}
             onCenterCalculated={handleCenterCalculated}
+            onSceneExtracted={handleSceneExtracted}
           />
         </Canvas>
       </div>
