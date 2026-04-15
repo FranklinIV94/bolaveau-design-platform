@@ -1,58 +1,46 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { requireAuth } from '@/lib/auth-guard'
+import bcrypt from 'bcryptjs'
 
-// This endpoint creates the database tables.
-// It's protected and should only be called once during initial setup.
 export async function POST(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const secret = searchParams.get('secret')
-
-  if (secret !== process.env.NEXTAUTH_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Require auth session (admin)
+  const mockReq = req as any
+  const authResult = await requireAuth(mockReq)
+  if (authResult instanceof NextResponse) return authResult
 
   const results: Record<string, string> = {}
 
-  // Create projects table via raw SQL using pg client via RPC workaround
-  // We'll use the supabase SQL endpoint approach - but since that doesn't work,
-  // we'll try inserting a record and see what happens
-
-  // First, check if projects table exists
+  // Check projects table
   const { error: projectsCheckError } = await supabaseAdmin
     .from('projects')
     .select('id')
     .limit(1)
-
-  if (projectsCheckError) {
-    results.projectsTable = `Error: ${projectsCheckError.message} - Please run supabase-setup.sql in Supabase Dashboard SQL Editor`
-  } else {
-    results.projectsTable = 'already exists or accessible'
-  }
+  results.projectsTable = projectsCheckError
+    ? `Error: ${projectsCheckError.message} — run supabase-setup.sql first`
+    : 'accessible'
 
   // Check models table
   const { error: modelsCheckError } = await supabaseAdmin
     .from('models')
     .select('id')
     .limit(1)
+  results.modelsTable = modelsCheckError
+    ? `Error: ${modelsCheckError.message} — run supabase-setup.sql first`
+    : 'accessible'
 
-  if (modelsCheckError) {
-    results.modelsTable = `Error: ${modelsCheckError.message} - Please run supabase-setup.sql in Supabase Dashboard SQL Editor`
-  } else {
-    results.modelsTable = 'already exists or accessible'
-  }
-
-  // Create default admin user if doesn't exist
+  // Create default admin user if not exists
   try {
+    const passwordHash = await bcrypt.hash('bolaveau2026', 12)
     const { error: adminError } = await supabaseAdmin
-      .from('admin_users')
+      .from('users')
       .insert({
         email: 'admin@bolaveau.com',
-        password_hash: 'bolaveau2026',
+        password_hash: passwordHash,
         name: 'Bolaveau Admin',
         role: 'ADMIN',
         is_active: true,
       })
-
     results.adminUser = adminError ? adminError.message : 'created or already exists'
   } catch (e: any) {
     results.adminUser = `Error: ${e.message}`
@@ -68,7 +56,6 @@ export async function POST(req: Request) {
         address: '1234 Ocean Drive, Miami Beach, FL 33139',
         status: 'in-progress',
       })
-
     results.sampleProject = projectError ? projectError.message : 'created'
   } catch (e: any) {
     results.sampleProject = `Error: ${e.message}`
@@ -79,12 +66,12 @@ export async function POST(req: Request) {
 
 export async function GET() {
   return NextResponse.json({
-    message: 'Send a POST request with ?secret=<NEXTAUTH_SECRET> to initialize the database',
+    message: 'Send a POST request to initialize. Requires admin session.',
     instructions: [
       '1. Go to Supabase Dashboard > SQL Editor',
-      '2. Paste the contents of supabase-setup.sql',
-      '3. Run the SQL',
-      '4. Then POST to this endpoint with the secret'
-    ]
+      '2. Paste supabase-setup.sql and run',
+      '3. Sign in as admin@bolaveau.com',
+      '4. POST to this endpoint',
+    ],
   })
 }

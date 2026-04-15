@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { requireAuth } from '@/lib/auth-guard'
 
 export async function GET(req: NextRequest) {
+  const authResult = await requireAuth(req)
+  if (authResult instanceof NextResponse) return authResult
+
   const { searchParams } = new URL(req.url)
   const path = searchParams.get('path')
 
@@ -9,17 +13,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'No path provided' }, { status: 400 })
   }
 
-  // Download file from Supabase Storage
+  // Prevent path traversal
+  if (!path.match(/^[a-zA-Z0-9/_.-]+$/)) {
+    return NextResponse.json({ error: 'Invalid path' }, { status: 400 })
+  }
+
   const { data, error } = await supabaseAdmin.storage
     .from('3d-models')
     .download(path)
 
   if (error || !data) {
-    console.error('Storage download error:', error)
     return NextResponse.json({ error: 'File not found' }, { status: 404 })
   }
 
-  // Determine content type based on extension
   const isGlb = path.toLowerCase().endsWith('.glb')
   const contentType = isGlb ? 'model/gltf-binary' : 'model/gltf+json'
 

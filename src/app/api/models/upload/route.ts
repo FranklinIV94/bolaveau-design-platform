@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { requireAuth } from '@/lib/auth-guard'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
 export async function POST(req: NextRequest) {
+  // Auth guard
+  const authResult = await requireAuth(req)
+  if (authResult instanceof NextResponse) return authResult
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
@@ -28,7 +33,8 @@ export async function POST(req: NextRequest) {
 
     // Generate unique storage path
     const timestamp = Date.now()
-    const storagePath = `${projectId}/${timestamp}-${file.name}`
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const storagePath = `${projectId}/${timestamp}-${safeName}`
 
     // Upload to Supabase Storage
     const arrayBuffer = await file.arrayBuffer()
@@ -39,8 +45,8 @@ export async function POST(req: NextRequest) {
         upsert: false,
       })
 
+
     if (uploadError) {
-      console.error('Storage upload error:', uploadError)
       return NextResponse.json({ error: 'Failed to upload file: ' + uploadError.message }, { status: 500 })
     }
 
@@ -52,19 +58,17 @@ export async function POST(req: NextRequest) {
         filename: file.name,
         storage_path: storagePath,
         file_size: file.size,
-        uploaded_by: null, // Could add user id from session
+        uploaded_by: (authResult as any).id ?? null,
       })
       .select()
       .single()
 
     if (dbError) {
-      console.error('DB insert error:', dbError)
       return NextResponse.json({ error: 'Failed to save model record: ' + dbError.message }, { status: 500 })
     }
 
     return NextResponse.json({ model: data }, { status: 201 })
-  } catch (err) {
-    console.error('Upload error:', err)
+  } catch {
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
 }
