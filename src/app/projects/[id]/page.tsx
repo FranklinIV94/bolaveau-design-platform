@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Header from '@/components/Header'
@@ -107,6 +107,8 @@ export default function ProjectDetail() {
   const latestModel = models.length > 0 ? models[models.length - 1] : null
   const activeModel = selectedModel || latestModel
   const modelUrl = activeModel ? `/api/models/file?path=${encodeURIComponent(activeModel.storage_path)}` : null
+  const hasManyModels = models.length > 1
+  const activeModelId = activeModel?.id ?? null
 
   if (loading) {
     return (
@@ -130,6 +132,21 @@ export default function ProjectDetail() {
     completed: { bg: 'rgba(34,197,94,0.1)', text: '#22c55e' },
   }
   const sc = statusColors[project.status] || statusColors.planning
+
+  // Precompute model list items to avoid `>` operator in JSX attr expressions
+  const modelItems = models.map((m) => {
+    const isActive = m.id === activeModelId
+    return {
+      ...m,
+      isActive,
+      bgStyle: isActive ? 'rgba(201,168,76,0.08)' : '#1a1a1a',
+      borderStyle: isActive ? 'rgba(201,168,76,0.4)' : 'rgba(201,168,76,0.1)',
+      textColor: isActive ? '#c9a84c' : '#ccc',
+      cursorStyle: hasManyModels ? 'pointer' : 'default',
+      formattedSize: (m.file_size / 1024 / 1024).toFixed(1) + ' MB',
+      displayName: m.filename.replace('.glb', '').replace(/_/g, ' '),
+    }
+  })
 
   return (
     <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -162,14 +179,14 @@ export default function ProjectDetail() {
             {project.status}
           </span>
           {project.address && <span style={{ color: '#888', fontSize: 12 }}>{project.address}</span>}
-          {models.length > 1 && (
+          {hasManyModels && (
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#666', fontSize: 12 }}>Model:</span>
               <select
-                value={activeModel?.id || ''}
+                value={activeModelId ?? ''}
                 onChange={(e) => {
-                  const m = models.find(m => m.id === e.target.value)
-                  setSelectedModel(m || null)
+                  const m = models.find((x) => x.id === e.target.value)
+                  setSelectedModel(m ?? null)
                 }}
                 style={{
                   background: '#2a2a2a',
@@ -181,7 +198,7 @@ export default function ProjectDetail() {
                   cursor: 'pointer',
                 }}
               >
-                {models.map(m => (
+                {models.map((m) => (
                   <option key={m.id} value={m.id}>{m.filename}</option>
                 ))}
               </select>
@@ -193,8 +210,8 @@ export default function ProjectDetail() {
         <div style={{ flex: 1, position: 'relative', minHeight: 480, display: 'flex', flexDirection: 'column' }}>
           {modelUrl ? (
             <div style={{ flex: 1, position: 'relative', minHeight: 480 }}>
-              <ModelViewer key={activeModel?.id} modelUrl={modelUrl} />
-              {models.length > 1 && (
+              <ModelViewer key={activeModelId} modelUrl={modelUrl} />
+              {hasManyModels && (
                 <div style={{
                   position: 'absolute',
                   bottom: 16,
@@ -204,14 +221,14 @@ export default function ProjectDetail() {
                   gap: 6,
                   zIndex: 20,
                 }}>
-                  {models.map(m => (
+                  {modelItems.map((mi) => (
                     <button
-                      key={m.id}
-                      onClick={() => setSelectedModel(m)}
+                      key={mi.id}
+                      onClick={() => setSelectedModel(models.find((x) => x.id === mi.id) ?? null)}
                       style={{
-                        background: (activeModel?.id === m.id) ? '#c9a84c' : 'rgba(26,26,26,0.85)',
-                        color: (activeModel?.id === m.id) ? '#0a0a0a' : '#888',
-                        border: '1px solid ' + ((activeModel?.id === m.id) ? '#c9a84c' : 'rgba(201,168,76,0.25)'),
+                        background: mi.isActive ? '#c9a84c' : 'rgba(26,26,26,0.85)',
+                        color: mi.isActive ? '#0a0a0a' : '#888',
+                        border: '1px solid ' + (mi.isActive ? '#c9a84c' : 'rgba(201,168,76,0.25)'),
                         borderRadius: 6,
                         padding: '5px 14px',
                         fontSize: 12,
@@ -221,7 +238,7 @@ export default function ProjectDetail() {
                         backdropFilter: 'blur(8px)',
                       }}
                     >
-                      {m.filename.replace('.glb', '').replace(/_/g, ' ')}
+                      {mi.displayName}
                     </button>
                   ))}
                 </div>
@@ -283,25 +300,25 @@ export default function ProjectDetail() {
               Models ({models.length})
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {models.map((m) => (
+              {modelItems.map((mi) => (
                 <div
-                  key={m.id}
-                  onClick={() => setSelectedModel(m)}
+                  key={mi.id}
+                  onClick={() => hasManyModels && setSelectedModel(models.find((x) => x.id === mi.id) ?? null)}
                   style={{
-                    background: (activeModel?.id === m.id) ? 'rgba(201,168,76,0.08)' : '#1a1a1a',
-                    border: '1px solid ' + ((activeModel?.id === m.id) ? 'rgba(201,168,76,0.4)' : 'rgba(201,168,76,0.1)',
+                    background: mi.bgStyle,
+                    border: '1px solid ' + mi.borderStyle,
                     borderRadius: 6,
                     padding: '8px 14px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    cursor: models.length > 1 ? 'pointer' : 'default',
+                    cursor: mi.cursorStyle,
                     transition: 'all 0.15s',
                   }}
                 >
-                  <span style={{ color: (activeModel?.id === m.id) ? '#c9a84c' : '#ccc', fontSize: 13 }}>{m.filename}</span>
+                  <span style={{ color: mi.textColor, fontSize: 13 }}>{mi.filename}</span>
                   <span style={{ color: '#555', fontSize: 11 }}>
-                    {(m.file_size / 1024 / 1024).toFixed(1)} MB · {new Date(m.created_at).toLocaleDateString()}
+                    {mi.formattedSize} · {new Date(mi.created_at).toLocaleDateString()}
                   </span>
                 </div>
               ))}
