@@ -1,20 +1,25 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { Viewer } from '@pascal-app/viewer'
 import { useScene } from '@pascal-app/core'
 
-function SceneInitializer() {
+interface BolaveauViewerProps {
+  projectId: string
+}
+
+function SceneInitializer({ projectId }: { projectId: string }) {
   const initialized = useRef(false)
-  const { setScene } = useScene()
+  const { setScene, clearScene } = useScene()
 
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
 
-    // Initialize a sample building scene: site → building → level → walls + slab
-    const siteId = 'site_bolaveau'
-    const buildingId = 'building_bolaveau'
-    const levelId = 'level_bolaveau'
+    // Initialize a default empty building scene for the project
+    const siteId = `site_${projectId}`
+    const buildingId = `building_${projectId}`
+    const levelId = `level_${projectId}`
 
     const nodes: Record<string, Record<string, unknown>> = {}
 
@@ -43,100 +48,46 @@ function SceneInitializer() {
       parentId: buildingId,
       visible: true,
       metadata: {},
-      children: ['slab_floor', 'wall_north', 'wall_south', 'wall_east', 'wall_west', 'wall_divider'],
+      children: [],
       elevation: 0,
       height: 3,
       name: 'Ground Floor',
     }
 
-    // Floor slab
-    nodes['slab_floor'] = {
-      id: 'slab_floor',
-      type: 'slab',
-      parentId: levelId,
-      visible: true,
-      metadata: {},
-      children: [],
-      elevation: 0,
-      height: 0.15,
-      boundary: [
-        [-8, -6], [8, -6], [8, 6], [-8, 6], [-8, -6]
-      ],
-    }
-
-    // Outer walls
-    nodes['wall_north'] = {
-      id: 'wall_north',
-      type: 'wall',
-      parentId: levelId,
-      visible: true,
-      metadata: {},
-      children: [],
-      start: [-8, 6],
-      end: [8, 6],
-      height: 3,
-      thickness: 0.15,
-    }
-
-    nodes['wall_south'] = {
-      id: 'wall_south',
-      type: 'wall',
-      parentId: levelId,
-      visible: true,
-      metadata: {},
-      children: [],
-      start: [-8, -6],
-      end: [8, -6],
-      height: 3,
-      thickness: 0.15,
-    }
-
-    nodes['wall_east'] = {
-      id: 'wall_east',
-      type: 'wall',
-      parentId: levelId,
-      visible: true,
-      metadata: {},
-      children: [],
-      start: [8, -6],
-      end: [8, 6],
-      height: 3,
-      thickness: 0.15,
-    }
-
-    nodes['wall_west'] = {
-      id: 'wall_west',
-      type: 'wall',
-      parentId: levelId,
-      visible: true,
-      metadata: {},
-      children: [],
-      start: [-8, -6],
-      end: [-8, 6],
-      height: 3,
-      thickness: 0.15,
-    }
-
-    // Interior partition wall
-    nodes['wall_divider'] = {
-      id: 'wall_divider',
-      type: 'wall',
-      parentId: levelId,
-      visible: true,
-      metadata: {},
-      children: [],
-      start: [-8, 0],
-      end: [3, 0],
-      height: 3,
-      thickness: 0.12,
-    }
-
     setScene(nodes, [siteId])
-  }, [setScene])
+
+    return () => {
+      clearScene()
+    }
+  }, [projectId, setScene, clearScene])
 
   return null
 }
 
-export default function BolaveauViewer() {
-  return <SceneInitializer />
+export default function BolaveauViewer({ projectId }: BolaveauViewerProps) {
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative', background: '#0a0a0a' }}>
+      <SceneInitializer projectId={projectId} />
+      <Viewer>
+        {/* Pascal Viewer handles all 3D rendering */}
+      </Viewer>
+
+      {/* Bolaveau branding overlay */}
+      <div style={{
+        position: 'absolute',
+        bottom: 14,
+        right: 14,
+        zIndex: 20,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        opacity: 0.4,
+        pointerEvents: 'none',
+      }}>
+        <span style={{ color: '#c9a84c', fontSize: 10, fontWeight: 600, letterSpacing: 1 }}>
+          POWERED BY PASCAL
+        </span>
+      </div>
+    </div>
+  )
 }

@@ -7,7 +7,8 @@ import dynamic from 'next/dynamic'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
-const ModelViewer = dynamic(() => import('@/components/ModelViewer'), { ssr: false })
+const BolaveauViewer = dynamic(() => import('@/components/BolaveauViewer'), { ssr: false })
+const WebGPUCheck = dynamic(() => import('@/components/WebGPUCheck').then(m => ({ default: m.WebGPUCheck })), { ssr: false })
 
 interface Project {
   id: string
@@ -285,11 +286,12 @@ export default function ProjectDetail() {
         )}
       </div>
 
-      {/* 3D Viewer — expands to fill available space */}
+      {/* 3D Viewer — Pascal engine */}
       <div style={{ flex: 1, position: 'relative', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        {modelUrl ? (
-          <div style={{ flex: 1, position: 'relative', minHeight: 480 }}>
-            <ModelViewer key={activeModelId} modelUrl={modelUrl} />
+        <div style={{ flex: 1, position: 'relative', minHeight: 480 }}>
+          <WebGPUCheck>
+            <BolaveauViewer projectId={projectId} />
+          </WebGPUCheck>
             {hasManyModels && (
               <div style={{
                 position: 'absolute',
@@ -328,37 +330,6 @@ export default function ProjectDetail() {
               </div>
             )}
           </div>
-        ) : (
-          <div style={{
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            height: '100%', minHeight: 480,
-            background: '#0a0a0a',
-            gap: 12,
-            position: 'relative',
-          }}>
-            <div style={{
-              position: 'absolute', inset: 0, opacity: 0.3,
-              backgroundImage: 'linear-gradient(rgba(201,168,76,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.05) 1px, transparent 1px)',
-              backgroundSize: '24px 24px',
-            }}></div>
-            <div style={{
-              width: 72, height: 72, borderRadius: 14,
-              background: 'rgba(201,168,76,0.05)',
-              border: '1px solid rgba(201,168,76,0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              position: 'relative', zIndex: 1,
-            }}>
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                <path d="M16 3L29 10.5v15L16 29 3 25.5v-15L16 3z" stroke="#c9a84c" strokeWidth="1.5" fill="none"/>
-                <path d="M16 3v20M3 10.5l13 5 13-5M16 23v6M3 25.5l13 5 13-5" stroke="#c9a84c" strokeWidth="1.5"/>
-              </svg>
-            </div>
-            <p style={{ color: '#666', fontSize: 15, fontWeight: 500, margin: 0, position: 'relative', zIndex: 1 }}>No models uploaded yet</p>
-            {isAdmin && <p style={{ color: '#3a3a3a', fontSize: 12, margin: 0, position: 'relative', zIndex: 1 }}>Upload a .glb or .gltf file below to get started</p>}
-            {!isAdmin && <p style={{ color: '#3a3a3a', fontSize: 12, margin: 0, position: 'relative', zIndex: 1 }}>This project has no 3D models yet</p>}
-          </div>
-        )}
       </div>
 
       {/* Upload zone — admin only */}
