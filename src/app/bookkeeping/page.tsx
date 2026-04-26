@@ -152,7 +152,7 @@ export default function BookkeepingPage() {
                   {accounts.map(account => (
                     <tr key={account.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <td style={{ padding: '10px 16px', fontSize: 12, fontFamily: 'monospace', color: '#888' }}>{account.account_number}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 13, color: '#fff' }}>{account.name}</div>
+                      <td style={{ padding: '10px 16px', fontSize: 13, color: '#fff' }}>{account.name}</td>
                       <td style={{ padding: '10px 16px' }}>
                         <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: `${TYPE_COLORS[account.type as AccountType]}20`, color: TYPE_COLORS[account.type as AccountType], fontWeight: 600 }}>
                           {TYPE_LABELS[account.type as AccountType] || account.type}
