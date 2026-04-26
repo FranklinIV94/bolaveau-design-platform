@@ -6,7 +6,7 @@ module.exports = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei', '@pascal-app/core', '@pascal-app/viewer'],
+  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei', '@pascal-app/core', '@pascal-app/viewer', '@pascal-app/editor'],
   images: {
     unoptimized: true,
   },

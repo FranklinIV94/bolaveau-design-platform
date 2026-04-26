@@ -5,9 +5,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Header from '@/components/Header'
-import Footer from '@/components/Footer'
 
-const BolaveauViewer = dynamic(() => import('@/components/BolaveauViewer'), { ssr: false })
+const BolaveauEditor = dynamic(() => import('@/components/BolaveauEditor'), { ssr: false })
 const WebGPUCheck = dynamic(() => import('@/components/WebGPUCheck').then(m => ({ default: m.WebGPUCheck })), { ssr: false })
 
 interface Project {
@@ -16,14 +15,6 @@ interface Project {
   description: string
   address: string
   status: string
-}
-
-interface Model {
-  id: string
-  filename: string
-  storage_path: string
-  file_size: number
-  created_at: string
 }
 
 function formatModelName(filename: string): string {
@@ -49,11 +40,10 @@ export default function ProjectDetail() {
   const projectId = params.id as string
 
   const [project, setProject] = useState<Project | null>(null)
-  const [models, setModels] = useState<Model[]>([])
+  const [models, setModels] = useState<{ id: string; filename: string; storage_path: string; file_size: number; created_at: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const [copiedLink, setCopiedLink] = useState(false)
   const isAdmin = (session?.user as any)?.role?.toLowerCase() === 'admin'
 
@@ -73,9 +63,6 @@ export default function ProjectDetail() {
     setProject(projData.project || null)
     setModels(modelsData.models || [])
     setLoading(false)
-    if (modelsData.models?.length > 0 && !selectedModel) {
-      setSelectedModel(modelsData.models[modelsData.models.length - 1])
-    }
   }
 
   const handleUpload = async (file: File) => {
@@ -105,25 +92,14 @@ export default function ProjectDetail() {
     if (file) handleUpload(file)
   }
 
-  const latestModel = models.length > 0 ? models[models.length - 1] : null
-  const activeModel = selectedModel || latestModel
-  const modelUrl = activeModel ? `/api/models/file?path=${encodeURIComponent(activeModel.storage_path)}` : null
-  const hasManyModels = models.length > 1
-  const activeModelId = activeModel?.id ?? null
-
   if (loading) {
     return (
       <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header />
-        <div style={{ background: '#1a1a1a', borderBottom: '1px solid rgba(201,168,76,0.1)', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 16, minHeight: 52 }}>
-          <div style={{ width: 60, height: 14, borderRadius: 4, background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
-          <div style={{ width: 1, height: 16, background: 'rgba(201,168,76,0.1)' }} />
-          <div style={{ width: 140, height: 16, borderRadius: 4, background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
-        </div>
-        <div style={{ flex: 1, minHeight: 480, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 48, height: 48, border: '3px solid rgba(201,168,76,0.2)', borderTopColor: '#c9a84c', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
@@ -143,26 +119,11 @@ export default function ProjectDetail() {
   }
   const sc = statusColors[project.status] || statusColors.planning
 
-  // Precompute for JSX (avoid `>` in style expressions)
-  const modelItems = models.map((m) => {
-    const isActive = m.id === activeModelId
-    return {
-      ...m,
-      isActive,
-      displayName: formatModelName(m.filename),
-      bgStyle: isActive ? 'rgba(201,168,76,0.08)' : '#1a1a1a',
-      borderStyle: isActive ? 'rgba(201,168,76,0.5)' : 'rgba(201,168,76,0.1)',
-      textColor: isActive ? '#c9a84c' : '#ccc',
-      cursorStyle: hasManyModels ? 'pointer' : 'default',
-      timeAgo: relativeTime(m.created_at),
-    }
-  })
-
   return (
-    <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: '#0a0a0a', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header />
 
-      {/* Project info bar — sticky */}
+      {/* Project info bar */}
       <div style={{
         position: 'sticky',
         top: 0,
@@ -170,14 +131,14 @@ export default function ProjectDetail() {
         background: 'rgba(26,26,26,0.92)',
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(201,168,76,0.15)',
-        padding: '10px 24px',
+        padding: '8px 24px',
         display: 'flex',
         alignItems: 'center',
         gap: 16,
         flexWrap: 'wrap',
-        minHeight: 52,
+        minHeight: 44,
+        flexShrink: 0,
       }}>
-      
         <button
           onClick={() => router.push('/projects')}
           style={{
@@ -191,7 +152,6 @@ export default function ProjectDetail() {
             display: 'flex',
             alignItems: 'center',
             gap: 4,
-            transition: 'opacity 0.15s',
             flexShrink: 0,
           }}
         >
@@ -230,7 +190,6 @@ export default function ProjectDetail() {
             setTimeout(() => setCopiedLink(false), 2000)
           }}
           title="Copy project link"
-          aria-label="Copy project link to clipboard"
           style={{
             marginLeft: 'auto',
             background: 'rgba(201,168,76,0.06)',
@@ -257,234 +216,36 @@ export default function ProjectDetail() {
           {copiedLink ? 'Copied!' : 'Share'}
         </button>
 
-        {hasManyModels && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <span style={{ color: '#555', fontSize: 11 }}>Model</span>
-            <select
-              value={activeModelId ?? ''}
-              onChange={(e) => {
-                const m = models.find((x) => x.id === e.target.value)
-                setSelectedModel(m ?? null)
-              }}
-              aria-label="Select a 3D model"
-              style={{
-                background: '#252525',
-                color: '#c9a84c',
-                border: '1px solid rgba(201,168,76,0.25)',
-                borderRadius: 6,
-                padding: '4px 10px',
-                fontSize: 12,
-                cursor: 'pointer',
-                outline: 'none',
-              }}
-            >
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>{formatModelName(m.filename)}</option>
-              ))}
-            </select>
-          </div>
+        {isAdmin && (
+          <label style={{
+            background: 'rgba(201,168,76,0.1)',
+            border: '1px solid rgba(201,168,76,0.25)',
+            borderRadius: 6,
+            padding: '4px 12px',
+            color: '#c9a84c',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: uploading ? 'wait' : 'pointer',
+            flexShrink: 0,
+          }}>
+            {uploading ? 'Uploading…' : '+ Upload Model'}
+            <input
+              type="file"
+              accept=".glb,.gltf"
+              onChange={handleFileInput}
+              disabled={uploading}
+              style={{ display: 'none' }}
+            />
+          </label>
         )}
       </div>
 
-      {/* 3D Viewer — Pascal engine */}
-      <div style={{ flex: 1, position: 'relative', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flex: 1, position: 'relative', minHeight: 480 }}>
-          <WebGPUCheck>
-            <BolaveauViewer projectId={projectId} />
-          </WebGPUCheck>
-            {hasManyModels && (
-              <div style={{
-                position: 'absolute',
-                bottom: 62,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                display: 'flex',
-                gap: 6,
-                zIndex: 20,
-                background: 'rgba(10,10,10,0.75)',
-                border: '1px solid rgba(201,168,76,0.2)',
-                borderRadius: 8,
-                padding: '5px 8px',
-                backdropFilter: 'blur(10px)',
-              }}>
-                {modelItems.map((mi) => (
-                  <button
-                    key={mi.id}
-                    onClick={() => setSelectedModel(models.find((x) => x.id === mi.id) ?? null)}
-                    style={{
-                      background: mi.isActive ? '#c9a84c' : 'transparent',
-                      color: mi.isActive ? '#0a0a0a' : '#888',
-                      border: '1px solid ' + (mi.isActive ? '#c9a84c' : 'rgba(201,168,76,0.2)'),
-                      borderRadius: 5,
-                      padding: '5px 14px',
-                      fontSize: 12,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {mi.displayName}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* Full editor */}
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <WebGPUCheck>
+          <BolaveauEditor projectId={projectId} />
+        </WebGPUCheck>
       </div>
-
-      {/* Upload zone — admin only */}
-      {isAdmin && (
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          style={{
-            background: dragOver ? 'rgba(201,168,76,0.04)' : 'transparent',
-            border: dragOver ? '2px dashed rgba(201,168,76,0.5)' : '2px dashed transparent',
-            borderRadius: 8,
-            padding: '12px 24px',
-            margin: '0 24px 16px',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <div style={{
-            flex: 1,
-            background: '#1a1a1a',
-            border: '1px dashed rgba(201,168,76,0.2)',
-            borderRadius: 8,
-            padding: '16px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            transition: 'all 0.2s',
-          }}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
-              <path d="M9 3v9M5 8l4-4 4 4M3 15h12" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <div style={{ flex: 1 }}>
-              <p style={{ color: '#888', fontSize: 13, margin: 0 }}>
-                {uploading ? 'Uploading model…' : 'Drop a .glb or .gltf file to upload'}
-              </p>
-              <p style={{ color: '#444', fontSize: 11, margin: '2px 0 0' }}>3D model files only · Max 50MB</p>
-            </div>
-            {uploading && (
-            <div style={{
-              width: '100%',
-              height: 3,
-              background: 'rgba(201,168,76,0.1)',
-              borderRadius: 2,
-              overflow: 'hidden',
-              marginTop: 8,
-            }}>
-              <div style={{
-                width: '60%',
-                height: '100%',
-                background: '#c9a84c',
-                borderRadius: 2,
-                animation: 'uploadProgress 2s ease-in-out infinite',
-              }}></div>
-            </div>
-          )}
-          {!uploading && (
-            <label style={{
-              background: 'rgba(201,168,76,0.1)',
-              border: '1px solid rgba(201,168,76,0.25)',
-              borderRadius: 6,
-              padding: '6px 14px',
-              color: '#c9a84c',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-              flexShrink: 0,
-            }}>
-              Browse Files
-              <input
-                type="file"
-                accept=".glb,.gltf"
-                onChange={handleFileInput}
-                disabled={uploading}
-                aria-label="Upload 3D model file"
-                style={{ display: 'none' }}
-              />
-            </label>
-          )}
-          </div>
-        </div>
-      )}
-
-      {/* Models list */}
-      {models.length > 0 && (
-        <div style={{ padding: '0 24px 20px' }}>
-          <div style={{
-            background: '#1a1a1a',
-            border: '1px solid rgba(201,168,76,0.1)',
-            borderRadius: 8,
-            overflow: 'hidden',
-          }}>
-            {modelItems.map((mi, idx) => (
-              <div
-                key={mi.id}
-                onClick={() => hasManyModels && setSelectedModel(models.find((x) => x.id === mi.id) ?? null)}
-                style={{
-                  background: mi.bgStyle,
-                  borderBottom: idx < models.length - 1 ? '1px solid rgba(201,168,76,0.06)' : 'none',
-                  padding: '10px 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  cursor: mi.cursorStyle,
-                  transition: 'all 0.15s',
-                }}
-              >
-                {/* Model icon */}
-                <div style={{
-                  width: 32, height: 32, borderRadius: 6,
-                  background: mi.isActive ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.04)',
-                  border: '1px solid ' + (mi.isActive ? 'rgba(201,168,76,0.35)' : 'rgba(201,168,76,0.1)'),
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 1L14 5v6L8 15 2 11V5L8 1z" stroke={mi.isActive ? '#c9a84c' : '#555'} strokeWidth="1.2" fill="none"/>
-                    <path d="M8 1v10M2 5l6 2 6-2M8 11v4M2 11l6 2 6-2" stroke={mi.isActive ? '#c9a84c' : '#555'} strokeWidth="1.2"/>
-                  </svg>
-                </div>
-
-                {/* Name + meta */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    color: mi.textColor,
-                    fontSize: 13, fontWeight: 500,
-                    margin: 0,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>
-                    {mi.displayName}
-                  </p>
-                  <p style={{ color: '#444', fontSize: 11, margin: '1px 0 0' }}>
-                    {(mi.file_size / 1024 / 1024).toFixed(1)} MB · Uploaded {mi.timeAgo}
-                  </p>
-                </div>
-
-                {/* Active indicator */}
-                {mi.isActive && (
-                  <div style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: '#c9a84c',
-                    flexShrink: 0,
-                    boxShadow: '0 0 6px rgba(201,168,76,0.6)',
-                  }} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <Footer />
     </div>
   )
 }
