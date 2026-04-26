@@ -1,1 +1,0 @@
-export { POST, runtime, dynamic } from '@browser-echo/next/route';

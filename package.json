@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@browser-echo/next": "^1.1.0",
     "@pascal-app/core": "^0.6.0",
     "@pascal-app/viewer": "^0.6.0",
     "@react-three/drei": "^10.7.7",
