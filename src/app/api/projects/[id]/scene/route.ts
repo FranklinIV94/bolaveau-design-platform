@@ -17,11 +17,16 @@ export async function GET(
     .eq('id', id)
     .single()
 
+  // Gracefully handle missing scene_data column
   if (error) {
+    if (error.message?.includes('column') || error.code === '42703') {
+      // Column doesn't exist yet — return null (client uses localStorage)
+      return NextResponse.json({ scene: null, persisted: false })
+    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ scene: data?.scene_data || null })
+  return NextResponse.json({ scene: data?.scene_data || null, persisted: true })
 }
 
 export async function PUT(
@@ -46,8 +51,13 @@ export async function PUT(
     .single()
 
   if (error) {
+    // Gracefully handle missing scene_data column
+    if (error.message?.includes('column') || error.code === '42703') {
+      // Column doesn't exist yet — client should keep using localStorage
+      return NextResponse.json({ success: false, persisted: false, error: 'Scene persistence not yet available on server' })
+    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, persisted: true })
 }
