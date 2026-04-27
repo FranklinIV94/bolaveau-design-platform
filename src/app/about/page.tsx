@@ -9,20 +9,21 @@ import Footer from '@/components/Footer'
 const TECH_STACK = [
   { category: 'Frontend', items: ['Next.js 15', 'React 19', 'Tailwind CSS 3', 'TypeScript 5', 'Three.js / React Three Fiber', 'Pascal Editor v0.6.0 (WebGPU)'] },
   { category: 'Backend', items: ['Next.js API Routes', 'Supabase (PostgreSQL)', 'Supabase Auth', 'Supabase Storage', 'Row-Level Security (RLS)'] },
-  { category: 'Infrastructure', items: ['Vercel (hosting)', 'Local storage (scene persistence)', 'WebGPU (3D rendering)', 'GLB/GLTF model export'] },
-  { category: 'Security', items: ['Role-based access (admin/user)', 'RLS data isolation per entity', 'Session-based auth (NextAuth v4)', 'Supabase service role (server-side only)'] },
+  { category: 'Architecture', items: ['4 independent Vercel deployments', '4 independent Supabase instances', 'API-first inter-module communication', 'Shared auth (same user accounts)', 'Independent scaling per module'] },
+  { category: 'Infrastructure', items: ['Vercel (4 projects)', 'Supabase (4 instances)', 'WebGPU (3D rendering)', 'GLB/GLTF model export', 'localStorage scene persistence (interim)'] },
+  { category: 'Security', items: ['Role-based access (admin/user)', 'RLS data isolation per entity', 'Session-based auth (NextAuth v4)', 'Supabase service role (server-side only)', 'Separate databases per deployment'] },
 ]
 
 const MODULE_ROADMAP = [
-  { num: '0', name: 'Scaffold', status: 'done', desc: 'Auth, database schema, shared components, RBAC, project management', replaces: '—' },
-  { num: '1', name: 'Bookkeeping', status: 'done', desc: 'Chart of accounts, journal entries, P&L and balance sheet reporting', replaces: 'QuickBooks ($130/mo × 2 companies)' },
-  { num: '2', name: 'Accounts Payable', status: 'planned', desc: 'Vendor bills, payment scheduling, aging reports, ACH integration', replaces: 'Spreadsheets + Bill.com' },
-  { num: '3', name: 'Accounts Receivable', status: 'planned', desc: 'Client invoicing, payment tracking, aging reports, reminders', replaces: 'Spreadsheets + invoice apps' },
-  { num: '4', name: 'Insurance Policies', status: 'planned', desc: 'Policy tracking, renewal calendar, coverage gap alerts, document storage', replaces: 'Spreadsheets' },
-  { num: '5', name: 'Audits', status: 'planned', desc: 'Audit-ready document portal, compliance checklists, evidence collection', replaces: 'Email + spreadsheets' },
-  { num: '6', name: 'Proposals', status: 'planned', desc: 'Versioned proposal builder, e-signature, client portal for review', replaces: 'Google Docs + PDFs' },
-  { num: '7', name: 'Service Agreements', status: 'planned', desc: 'Contract management, renewal tracking, clause library, auto-renewal alerts', replaces: 'DocuSign + spreadsheets' },
-  { num: '8', name: '3D Design Editor', status: 'live', desc: 'Architectural floor plans, furniture placement, walkthrough mode, GLB export, demo scene', replaces: 'Paid CAD tools (AutoCAD, SketchUp)' },
+  { num: '0', name: 'Scaffold', deploy: '—', status: 'done', desc: 'Auth, database schema, shared components, RBAC, project management', replaces: '—' },
+  { num: '1', name: 'Bookkeeping', deploy: '1', status: 'shell', desc: 'Chart of accounts, journal entries, P&L and balance sheet reporting (shell — needs production hardening)', replaces: 'QuickBooks ($130/mo × 2 companies)' },
+  { num: '2', name: 'Accounts Payable', deploy: '2', status: 'planned', desc: 'Vendor bills, payment scheduling, aging reports, ACH integration', replaces: 'Spreadsheets + Bill.com' },
+  { num: '3', name: 'Accounts Receivable', deploy: '2', status: 'planned', desc: 'Client invoicing, payment tracking, aging reports, reminders', replaces: 'Spreadsheets + invoice apps' },
+  { num: '4', name: 'Insurance Policies', deploy: '3', status: 'planned', desc: 'Policy tracking, renewal calendar, coverage gap alerts, document storage', replaces: 'Spreadsheets' },
+  { num: '5', name: 'Audits', deploy: '3', status: 'planned', desc: 'Audit-ready document portal, compliance checklists, evidence collection', replaces: 'Email + spreadsheets' },
+  { num: '6', name: 'Proposals', deploy: '3', status: 'planned', desc: 'Versioned proposal builder, e-signature, client portal for review', replaces: 'Google Docs + PDFs' },
+  { num: '7', name: 'Service Agreements', deploy: '3', status: 'planned', desc: 'Contract management, renewal tracking, clause library, auto-renewal alerts', replaces: 'DocuSign + spreadsheets' },
+  { num: '8', name: '3D Design Editor', deploy: '4', status: 'live', desc: 'Architectural floor plans, furniture placement, walkthrough mode, GLB export, demo scene', replaces: 'Paid CAD tools (AutoCAD, SketchUp)' },
 ]
 
 const ARCHITECTURE_SECTIONS = [
@@ -102,7 +103,7 @@ export default function AboutPage() {
               This isn&apos;t a generic SaaS tool. It&apos;s a purpose-built command center for running both companies — combining real-time bookkeeping, client project management, 3D design visualization, and operational workflows in one place.
             </p>
             <p style={{ color: '#ccc', fontSize: 14, lineHeight: 1.7, margin: 0 }}>
-              The platform replaces QuickBooks (×2), scattered spreadsheets, paid CAD tools, proposal templates, andDocuSign workflows — with a single owned system that costs ~$45/month to run instead of ~$310/month.
+              The platform replaces QuickBooks (×2), scattered spreadsheets, paid CAD tools, proposal templates, and DocuSign workflows — with a single owned system that costs ~$45/month to run instead of ~$310/month.
             </p>
           </div>
         </section>
@@ -144,7 +145,7 @@ export default function AboutPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(201,168,76,0.15)' }}>
-                  {['#', 'Module', 'Status', 'Description', 'Replaces'].map(h => (
+                  {['#', 'Module', 'Deploy', 'Status', 'Description', 'Replaces'].map(h => (
                     <th key={h} style={{ color: '#888', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, padding: '0 0 10px', textAlign: 'left' }}>{h}</th>
                   ))}
                 </tr>
@@ -154,6 +155,7 @@ export default function AboutPage() {
                   <tr key={m.num} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <td style={{ color: '#555', fontSize: 12, padding: '10px 8px 10px 0' }}>{m.num}</td>
                     <td style={{ color: '#fff', fontSize: 13, fontWeight: 600, padding: '10px 8px' }}>{m.name}</td>
+                    <td style={{ color: m.deploy === '—' ? '#444' : '#c9a84c', fontSize: 11, fontWeight: 700, padding: '10px 8px' }}>{m.deploy === '—' ? '—' : `#${m.deploy}`}</td>
                     <td style={{ padding: '10px 8px' }}>
                       <StatusBadge status={m.status} />
                     </td>
@@ -227,6 +229,57 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* Architecture diagram */}
+        <section style={{ marginBottom: 48 }}>
+          <SectionHeading>Modular Architecture</SectionHeading>
+          <div style={cardStyle}>
+            <p style={{ color: '#ccc', fontSize: 14, lineHeight: 1.7, margin: '0 0 20px' }}>
+              This isn&apos;t one big monolith. Each major function runs as its own deployment — its own Vercel project, its own Supabase database, its own domain. They communicate through APIs.
+            </p>
+            <div style={{ background: '#111', borderRadius: 8, padding: 20, fontFamily: 'monospace', fontSize: 12, color: '#bbb', lineHeight: 1.6, overflowX: 'auto' }}>
+              <pre style={{ margin: 0, color: '#bbb' }}>{`┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   BOOKKEEPING    │────▶│     AP / AR      │────▶│   PROPOSALS      │
+│  (Supabase #1)   │     │  (Supabase #2)   │     │  (Supabase #3)   │
+│  Vercel Deploy 1 │     │  Vercel Deploy 2 │     │  Vercel Deploy 3 │
+└─────────────────┘     └─────────────────┘     └────────┬────────┘
+                                                          │
+                                                          ▼
+                                                ┌─────────────────┐
+                                                │  3D DESIGN EDITOR│
+                                                │  (Supabase #4)   │
+                                                │  Vercel Deploy 4 │
+                                                └─────────────────┘`}</pre>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12, marginTop: 20 }}>
+              {[
+                { deploy: '1', name: 'Bookkeeping', desc: 'GL, P&L, balance sheet, journal entries', status: 'Shell → Production' },
+                { deploy: '2', name: 'AP + AR', desc: 'Vendor bills, client invoicing, aging reports', status: 'Next' },
+                { deploy: '3', name: 'Operations Hub', desc: 'Insurance, audits, proposals, service agreements', status: 'Planned' },
+                { deploy: '4', name: '3D Design Editor', desc: 'Floor plans, walkthrough, GLB export', status: 'Live' },
+              ].map(d => (
+                <div key={d.deploy} style={{
+                  background: 'rgba(201,168,76,0.04)',
+                  border: '1px solid rgba(201,168,76,0.1)',
+                  borderRadius: 6,
+                  padding: '10px 14px',
+                }}>
+                  <div style={{ color: '#c9a84c', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+                    Deploy {d.deploy}
+                  </div>
+                  <div style={{ color: '#fff', fontSize: 13, fontWeight: 600, marginBottom: 3 }}>{d.name}</div>
+                  <div style={{ color: '#888', fontSize: 11, lineHeight: 1.4 }}>{d.desc}</div>
+                  <div style={{ color: d.status === 'Live' ? '#22c55e' : '#3b82f6', fontSize: 10, fontWeight: 700, marginTop: 6, textTransform: 'uppercase' }}>
+                    {d.status}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p style={{ color: '#999', fontSize: 12, lineHeight: 1.6, marginTop: 16, marginBottom: 0 }}>
+              <strong style={{ color: '#ccc' }}>Why separate deployments?</strong> A bookkeeping system shouldn&apos;t crash because the 3D editor hit a memory limit. Proposals shouldn&apos;t wait on AP to deploy. Scaling one module shouldn&apos;t require redeploying everything. Each app owns its data. No shared database. No single point of failure.
+            </p>
+          </div>
+        </section>
+
         {/* Key design decisions */}
         <section style={{ marginBottom: 48 }}>
           <SectionHeading>Key Design Decisions</SectionHeading>
@@ -268,6 +321,7 @@ function StatusBadge({ status }: { status: string }) {
     done: { bg: 'rgba(34,197,94,0.12)', text: '#22c55e', label: 'Live' },
     live: { bg: 'rgba(34,197,94,0.12)', text: '#22c55e', label: 'Live' },
     planned: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6', label: 'Planned' },
+    shell: { bg: 'rgba(201,168,76,0.12)', text: '#c9a84c', label: 'Shell' },
     'in-progress': { bg: 'rgba(201,168,76,0.12)', text: '#c9a84c', label: 'In Progress' },
   }
   const s = map[status] || map.planned
