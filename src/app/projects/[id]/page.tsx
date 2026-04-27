@@ -8,6 +8,7 @@ import Header from '@/components/Header'
 
 const BolaveauEditor = dynamic(() => import('@/components/BolaveauEditor'), { ssr: false })
 const WebGPUCheck = dynamic(() => import('@/components/WebGPUCheck').then(m => ({ default: m.WebGPUCheck })), { ssr: false })
+const UndoRedoButtons = dynamic(() => import('@/components/UndoRedoButtons'), { ssr: false })
 
 interface Project {
   id: string
@@ -107,7 +108,7 @@ export default function ProjectDetail() {
   if (!project) {
     return (
       <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#666' }}>Project not found</p>
+        <p style={{ color: '#bbb' }}>Project not found</p>
       </div>
     )
   }
@@ -176,11 +177,11 @@ export default function ProjectDetail() {
         </span>
 
         {project.address && (
-          <span style={{ color: '#666', fontSize: 12, flexShrink: 0 }}>{project.address}</span>
+          <span style={{ color: '#bbb', fontSize: 12, flexShrink: 0 }}>{project.address}</span>
         )}
 
         {project.description && (
-          <span style={{ color: '#444', fontSize: 11, flexShrink: 0, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.description}</span>
+          <span style={{ color: '#888', fontSize: 11, flexShrink: 0, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.description}</span>
         )}
 
         <button
@@ -241,7 +242,8 @@ export default function ProjectDetail() {
       </div>
 
       {/* Full editor */}
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+        <UndoRedoButtons />
         <WebGPUCheck>
           <BolaveauEditor projectId={projectId} />
         </WebGPUCheck>

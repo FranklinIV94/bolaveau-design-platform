@@ -85,7 +85,7 @@ export default function ProjectsList() {
         {/* Page header */}
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ color: '#fff', fontSize: 26, fontWeight: 600, margin: '0 0 6px' }}>Projects</h1>
-          <p style={{ color: '#555', fontSize: 13, margin: 0 }}>
+          <p style={{ color: '#999', fontSize: 13, margin: 0 }}>
             {projects.length > 0
               ? `${projects.length} project${projects.length !== 1 ? 's' : ''} in your studio`
               : 'Your design studio is ready'}
@@ -114,8 +114,8 @@ export default function ProjectsList() {
               </svg>
             </div>
             <div>
-              <p style={{ color: '#888', fontSize: 16, fontWeight: 500, margin: '0 0 6px' }}>Your design studio awaits</p>
-              <p style={{ color: '#444', fontSize: 13, margin: 0 }}>Projects shared with you will appear here</p>
+              <p style={{ color: '#ccc', fontSize: 16, fontWeight: 500, margin: '0 0 6px' }}>Your design studio awaits</p>
+              <p style={{ color: '#888', fontSize: 13, margin: 0 }}>Projects shared with you will appear here</p>
             </div>
           </div>
         ) : (
@@ -182,7 +182,7 @@ export default function ProjectsList() {
                   </div>
 
                   {p.address && (
-                    <p style={{ color: '#666', fontSize: 12, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <p style={{ color: '#bbb', fontSize: 12, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
                         <path d="M5 1C3.3 1 2 2.3 2 4c0 2.5 3 5 3 5s3-2.5 3-5c0-1.7-1.3-3-3-3z" stroke="#888" strokeWidth="1"/>
                         <circle cx="5" cy="4" r="1" fill="#888"/>
@@ -192,7 +192,7 @@ export default function ProjectsList() {
                   )}
                   {p.description && (
                     <p style={{
-                      color: '#555', fontSize: 12, margin: 0,
+                      color: '#999', fontSize: 12, margin: 0,
                       lineHeight: 1.5,
                       display: '-webkit-box',
                       WebkitLineClamp: 2,

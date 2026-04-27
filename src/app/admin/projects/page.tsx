@@ -96,7 +96,7 @@ function DeleteModal({ projectName, onConfirm, onCancel }: { projectName: string
           </svg>
         </div>
         <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>Delete project</h3>
-        <p style={{ color: '#888', fontSize: 13, margin: '0 0 20px', lineHeight: 1.5 }}>
+        <p style={{ color: '#ccc', fontSize: 13, margin: '0 0 20px', lineHeight: 1.5 }}>
           Are you sure you want to delete <strong style={{ color: '#ccc' }}>{projectName}</strong>? This will permanently remove all models and files associated with this project. This action cannot be undone.
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -272,7 +272,7 @@ export default function AdminProjects() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
             <h1 style={{ color: '#fff', fontSize: 26, fontWeight: 600, margin: '0 0 4px' }}>Projects</h1>
-            <p style={{ color: '#555', fontSize: 12, margin: 0 }}>
+            <p style={{ color: '#999', fontSize: 12, margin: 0 }}>
               {filteredProjects.length === projects.length
                 ? `${projects.length} total`
                 : `${filteredProjects.length} of ${projects.length}`}
@@ -328,7 +328,7 @@ export default function AdminProjects() {
           }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label htmlFor="proj-name" style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Name</label>
+                <label htmlFor="proj-name" style={{ color: '#ccc', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Name</label>
                 <input
                   id="proj-name"
                   value={form.name}
@@ -342,7 +342,7 @@ export default function AdminProjects() {
                 />
               </div>
               <div>
-                <label htmlFor="proj-address" style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Address</label>
+                <label htmlFor="proj-address" style={{ color: '#ccc', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Address</label>
                 <input
                   id="proj-address"
                   value={form.address}
@@ -355,7 +355,7 @@ export default function AdminProjects() {
                 />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor="proj-desc" style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Description</label>
+                <label htmlFor="proj-desc" style={{ color: '#ccc', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Description</label>
                 <textarea
                   id="proj-desc"
                   value={form.description}
@@ -369,7 +369,7 @@ export default function AdminProjects() {
                 />
               </div>
               <div>
-                <label htmlFor="proj-status" style={{ color: '#888', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Status</label>
+                <label htmlFor="proj-status" style={{ color: '#ccc', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.8, textTransform: 'uppercase' }}>Status</label>
                 <select
                   id="proj-status"
                   value={form.status}
@@ -407,7 +407,7 @@ export default function AdminProjects() {
                 )}
                 {editing ? 'Update Project' : 'Create Project'}
               </button>
-              <button type="button" onClick={() => { setShowForm(false); setEditing(null) }} style={{ background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '9px 24px', cursor: 'pointer', fontSize: 13 }}>
+              <button type="button" onClick={() => { setShowForm(false); setEditing(null) }} style={{ background: 'transparent', color: '#ccc', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '9px 24px', cursor: 'pointer', fontSize: 13 }}>
                 Cancel
               </button>
             </div>
@@ -427,7 +427,7 @@ export default function AdminProjects() {
                 <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <p style={{ color: '#555', fontSize: 14, margin: 0 }}>
+            <p style={{ color: '#999', fontSize: 14, margin: 0 }}>
               {projects.length === 0 ? 'No projects yet. Create your first project above.' : 'No projects match this filter.'}
             </p>
           </div>
@@ -460,10 +460,10 @@ export default function AdminProjects() {
                       {statusLabels[p.status] || p.status}
                     </span>
                   </div>
-                  {p.address && <p style={{ color: '#666', fontSize: 12, margin: '0 0 8px' }}>{p.address}</p>}
+                  {p.address && <p style={{ color: '#bbb', fontSize: 12, margin: '0 0 8px' }}>{p.address}</p>}
                   {p.description && (
                     <p
-                      style={{ color: '#555', fontSize: 12, margin: '0 0 4px', lineHeight: 1.5, flex: 1 }}
+                      style={{ color: '#999', fontSize: 12, margin: '0 0 4px', lineHeight: 1.5, flex: 1 }}
                     >
                       {displayDesc}
                     </p>
@@ -489,7 +489,7 @@ export default function AdminProjects() {
                     <button onClick={() => startEdit(p)} style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 5, padding: '5px 12px', color: '#3b82f6', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', flex: 1 }}>
                       Edit
                     </button>
-                    <button onClick={() => setDeleteTarget({ id: p.id, name: p.name })} style={{ background: 'transparent', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 5, padding: '5px 12px', color: '#888', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', flex: 1 }}>
+                    <button onClick={() => setDeleteTarget({ id: p.id, name: p.name })} style={{ background: 'transparent', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 5, padding: '5px 12px', color: '#ccc', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', flex: 1 }}>
                       Delete
                     </button>
                   </div>
