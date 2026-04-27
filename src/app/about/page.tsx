@@ -289,7 +289,7 @@ export default function AboutPage() {
               { q: 'Why WebGPU for the 3D editor?', a: 'Pascal v0.6.0 uses WebGPU for performance. It renders architectural geometry (walls, slabs, stairs) in a browser without plugins. Chrome 113+ and Edge 113+ support it natively. Fallback is a message explaining the browser requirement.' },
               { q: 'Why localStorage for scene data?', a: 'Scene state changes rapidly (every mouse drag). Writing to Supabase on every change would be expensive and slow. localStorage with a 1-second debounce is a fast interim solution. The API route is ready for when a JSONB column is added to the projects table.' },
               { q: 'Why Supabase over other databases?', a: 'PostgreSQL + built-in auth + file storage + RLS + a clean admin UI. No separate auth service, no S3 bucket config, no custom RLS implementation. It\'s the right tool for the complexity level of this platform.' },
-              { q: 'What happens to historical data?', a: 'Current fiscal year is included in the $10K build. Importing 2–3 years of historical QuickBooks data is available as a separate engagement. It requires careful mapping of accounts, journal entries, and balances.' },
+              { q: 'What happens to historical data?', a: 'Current fiscal year is included in the $15K build. Importing 2–3 years of historical QuickBooks data is available as a separate engagement. It requires careful mapping of accounts, journal entries, and balances.' },
             ].map(item => (
               <div key={item.q} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, marginBottom: 6 }}>{item.q}</div>
