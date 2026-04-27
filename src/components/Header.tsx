@@ -67,6 +67,9 @@ export default function Header() {
           <Link href="/projects" style={navLinkStyle(pathname.startsWith('/projects') && !pathname.startsWith('/admin'))}>
             Projects
           </Link>
+          <Link href="/about" style={navLinkStyle(pathname === '/about')}>
+            About
+          </Link>
           {isAdmin && (
             <Link href="/admin/projects" style={navLinkStyle(pathname.startsWith('/admin'))}>
               Manage
