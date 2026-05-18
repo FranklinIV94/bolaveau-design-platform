@@ -11,9 +11,9 @@
   "dependencies": {
     "@browser-echo/next": "^1.1.0",
     "@number-flow/react": "^0.6.0",
-    "@pascal-app/core": "^0.6.0",
-    "@pascal-app/editor": "^0.6.0",
-    "@pascal-app/viewer": "^0.6.0",
+    "@pascal-app/core": "^0.8.0",
+    "@pascal-app/editor": "^0.8.0",
+    "@pascal-app/viewer": "^0.8.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-context-menu": "^2.2.16",
     "@radix-ui/react-dialog": "^1.1.15",
