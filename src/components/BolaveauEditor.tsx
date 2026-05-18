@@ -44,9 +44,9 @@ function getDemoScene(projectId: string): { nodes: Record<string, Record<string,
   const doorConfId = `door_conf_${projectId}`
   const doorOffice1Id = `door_office1_${projectId}`
 
-  const window1Id = `window1_${projectId}`
-  const window2Id = `window2_${projectId}`
-  const window3Id = `window3_${projectId}`
+  const window1Id = `window_front1_${projectId}`
+  const window2Id = `window_front2_${projectId}`
+  const window3Id = `window_office_${projectId}`
 
   const receptionDeskId = `item_reception_desk_${projectId}`
   const conferenceTableId = `item_conf_table_${projectId}`
@@ -161,19 +161,19 @@ function getDemoScene(projectId: string): { nodes: Record<string, Record<string,
     id: doorMainId, type: 'door', parentId: groundFloorId, visible: true,
     metadata: {}, children: [],
     position: [2.5, 0], width: 1.2, height: 2.4, swing: 'inward', wallId: wallOuterId,
-    doorType: 'interior',
+    doorType: 'hinged',
   }
   nodes[doorConfId] = {
     id: doorConfId, type: 'door', parentId: groundFloorId, visible: true,
     metadata: {}, children: [],
     position: [10, 2], width: 1.0, height: 2.4, swing: 'inward', wallId: wallConfId,
-    doorType: 'interior',
+    doorType: 'hinged',
   }
   nodes[doorOffice1Id] = {
     id: doorOffice1Id, type: 'door', parentId: groundFloorId, visible: true,
     metadata: {}, children: [],
     position: [3, 6], width: 0.9, height: 2.4, swing: 'inward', wallId: wallOffice1Id,
-    doorType: 'garage', frameless: true,
+    doorType: 'garage-sectional',
   }
 
   // Windows
