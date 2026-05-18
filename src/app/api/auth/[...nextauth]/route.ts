@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
         const { data: user, error } = await supabaseAdmin
           .from('users')
           .select('*')
-          .eq('email', credentials.email)
+          .ilike('email', credentials.email)
           .single()
 
         if (error || !user) return null
