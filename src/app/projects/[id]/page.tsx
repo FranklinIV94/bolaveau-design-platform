@@ -6,15 +6,14 @@ import { useRouter, useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Header from '@/components/Header'
 
-const BolaveauEditor = dynamic(() => import('@/components/BolaveauEditor').catch(() => {
-    // If the 3D editor fails to load (WebGPU not supported), return a fallback
-    return { default: () => <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 400, color: '#888', textAlign: 'center', padding: 32 }}>
-      <div>
-        <p style={{ color: '#c9a84c', fontSize: 16, fontWeight: 600 }}>3D Editor Unavailable</p>
-        <p style={{ fontSize: 13 }}>Your browser cannot load the 3D editor. Please use Chrome 113+ or Edge 113+.</p>
-      </div>
-    </div> }
-  }), { ssr: false })
+const BolaveauEditor = dynamic(() => import('@/components/BolaveauEditor'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 400, color: '#888' }}>
+      Loading 3D Editor...
+    </div>
+  ),
+})
 const WebGPUCheck = dynamic(() => import('@/components/WebGPUCheck').then(m => ({ default: m.WebGPUCheck })), { ssr: false })
 const UndoRedoButtons = dynamic(() => import('@/components/UndoRedoButtons'), { ssr: false })
 const ErrorBoundary = dynamic(() => import('@/components/ErrorBoundary'), { ssr: false })
