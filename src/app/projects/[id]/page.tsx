@@ -9,6 +9,7 @@ import Header from '@/components/Header'
 const BolaveauEditor = dynamic(() => import('@/components/BolaveauEditor'), { ssr: false })
 const WebGPUCheck = dynamic(() => import('@/components/WebGPUCheck').then(m => ({ default: m.WebGPUCheck })), { ssr: false })
 const UndoRedoButtons = dynamic(() => import('@/components/UndoRedoButtons'), { ssr: false })
+const ErrorBoundary = dynamic(() => import('@/components/ErrorBoundary'), { ssr: false })
 
 interface Project {
   id: string
@@ -245,8 +246,10 @@ export default function ProjectDetail() {
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <UndoRedoButtons />
         <WebGPUCheck>
+        <ErrorBoundary>
           <BolaveauEditor projectId={projectId} />
-        </WebGPUCheck>
+        </ErrorBoundary>
+      </WebGPUCheck>
       </div>
     </div>
   )
