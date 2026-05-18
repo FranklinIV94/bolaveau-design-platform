@@ -62,7 +62,7 @@ export default function Header() {
         </div>
       </Link>
 
-      {session && (
+      {session ? (
         <>
           <Link href="/projects" style={navLinkStyle(pathname.startsWith('/projects') && !pathname.startsWith('/admin'))}>
             Projects
@@ -96,17 +96,49 @@ export default function Header() {
             Guide
           </a>
         </>
+      ) : (
+        <>
+          <a
+            href="#features"
+            onClick={(e) => {
+              e.preventDefault()
+              document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+            }}
+            style={{
+              marginLeft: 16,
+              color: '#888',
+              fontSize: 13,
+              textDecoration: 'none',
+              fontWeight: 500,
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#c9a84c')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#888')}
+          >
+            Features
+          </a>
+          <Link href="/about" style={{
+            marginLeft: 16,
+            color: '#888',
+            fontSize: 13,
+            textDecoration: 'none',
+            fontWeight: 500,
+            transition: 'color 0.15s',
+          }}>
+            About
+          </Link>
+        </>
       )}
 
       <div style={{ flex: 1 }} />
 
-      {session && (
+      {session ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ color: '#555', fontSize: 11, letterSpacing: 0.3 }}>
             {session.user?.email}
           </span>
           <button
-            onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+            onClick={() => signOut({ callbackUrl: '/' })}
             style={{
               background: 'transparent',
               border: '1px solid rgba(255,255,255,0.08)',
@@ -124,6 +156,26 @@ export default function Header() {
             Sign Out
           </button>
         </div>
+      ) : (
+        <Link href="/auth/signin" style={{
+          background: '#c9a84c',
+          color: '#0a0a0a',
+          textDecoration: 'none',
+          borderRadius: 6,
+          padding: '7px 18px',
+          fontSize: 13,
+          fontWeight: 600,
+          transition: 'all 0.2s',
+          letterSpacing: 0.3,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#d4b55a'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = '#c9a84c'
+        }}>
+          Sign In
+        </Link>
       )}
     </div>
   )

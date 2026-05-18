@@ -36,6 +36,10 @@ function getDemoScene(projectId: string): { nodes: Record<string, Record<string,
   const wallConfId = `wall_conf_${projectId}`
   const wallOffice1Id = `wall_office1_${projectId}`
 
+  const columnLobbyId = `column_lobby_${projectId}`
+  const spawnEntryId = `spawn_entry_${projectId}`
+  const slabGroundId = `slab_ground_${projectId}`
+
   const doorMainId = `door_main_${projectId}`
   const doorConfId = `door_conf_${projectId}`
   const doorOffice1Id = `door_office1_${projectId}`
@@ -70,6 +74,7 @@ function getDemoScene(projectId: string): { nodes: Record<string, Record<string,
     children: [
       receptionZoneId, conferenceZoneId, office1ZoneId, breakRoomZoneId,
       wallOuterId, wallReceptionId, wallConfId, wallOffice1Id,
+      columnLobbyId, spawnEntryId, slabGroundId,
       doorMainId, doorConfId, doorOffice1Id,
       window1Id, window2Id, window3Id,
       receptionDeskId, conferenceTableId, officeDeskId, sofaId, kitchenCounterId,
@@ -130,21 +135,45 @@ function getDemoScene(projectId: string): { nodes: Record<string, Record<string,
     start: [0, 6], end: [5, 6], thickness: 0.15, height: 3.2, material: 'glass',
   }
 
+  // Column (v0.7.0)
+  nodes[columnLobbyId] = {
+    id: columnLobbyId, type: 'column', parentId: groundFloorId, visible: true,
+    metadata: { name: 'Lobby Column' }, children: [],
+    position: [7.5, 4], profile: 'tapered', bottomRadius: 0.25, topRadius: 0.18, height: 3.2,
+  }
+
+  // Spawn point (v0.7.0)
+  nodes[spawnEntryId] = {
+    id: spawnEntryId, type: 'spawn', parentId: groundFloorId, visible: true,
+    metadata: { name: 'Entry Spawn' }, children: [],
+    position: [2.5, 1.5], rotation: 0,
+  }
+
+  // Slab (v0.7.0)
+  nodes[slabGroundId] = {
+    id: slabGroundId, type: 'slab', parentId: groundFloorId, visible: true,
+    metadata: { name: 'Ground Floor Slab' }, children: [],
+    polygon: [[0, 0], [15, 0], [15, 8], [0, 8]], thickness: 0.15, elevation: 0,
+  }
+
   // Doors
   nodes[doorMainId] = {
     id: doorMainId, type: 'door', parentId: groundFloorId, visible: true,
     metadata: {}, children: [],
     position: [2.5, 0], width: 1.2, height: 2.4, swing: 'inward', wallId: wallOuterId,
+    doorType: 'interior',
   }
   nodes[doorConfId] = {
     id: doorConfId, type: 'door', parentId: groundFloorId, visible: true,
     metadata: {}, children: [],
     position: [10, 2], width: 1.0, height: 2.4, swing: 'inward', wallId: wallConfId,
+    doorType: 'interior',
   }
   nodes[doorOffice1Id] = {
     id: doorOffice1Id, type: 'door', parentId: groundFloorId, visible: true,
     metadata: {}, children: [],
     position: [3, 6], width: 0.9, height: 2.4, swing: 'inward', wallId: wallOffice1Id,
+    doorType: 'garage', frameless: true,
   }
 
   // Windows
@@ -152,16 +181,19 @@ function getDemoScene(projectId: string): { nodes: Record<string, Record<string,
     id: window1Id, type: 'window', parentId: groundFloorId, visible: true,
     metadata: {}, children: [],
     position: [7.5, 0], width: 2.0, height: 1.5, sill: 0.9, wallId: wallOuterId,
+    windowType: 'casement',
   }
   nodes[window2Id] = {
     id: window2Id, type: 'window', parentId: groundFloorId, visible: true,
     metadata: {}, children: [],
     position: [12.5, 0], width: 2.0, height: 1.5, sill: 0.9, wallId: wallOuterId,
+    windowType: 'awning',
   }
   nodes[window3Id] = {
     id: window3Id, type: 'window', parentId: groundFloorId, visible: true,
     metadata: {}, children: [],
     position: [1.5, 6], width: 1.5, height: 1.5, sill: 0.9, wallId: wallOffice1Id,
+    windowType: 'casement',
   }
 
   // Furniture / Items

@@ -7,7 +7,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
 const TECH_STACK = [
-  { category: 'Frontend', items: ['Next.js 15', 'React 19', 'Tailwind CSS 3', 'TypeScript 5', 'Three.js / React Three Fiber', 'Pascal Editor v0.6.0 (WebGPU)'] },
+  { category: 'Frontend', items: ['Next.js 15', 'React 19', 'Tailwind CSS 3', 'TypeScript 5', 'Three.js / React Three Fiber', 'Pascal Editor v0.8.0 (WebGPU)'] },
   { category: 'Backend', items: ['Next.js API Routes', 'Supabase (PostgreSQL)', 'Supabase Auth', 'Supabase Storage', 'Row-Level Security (RLS)'] },
   { category: 'Architecture', items: ['4 independent Vercel deployments', '4 independent Supabase instances', 'API-first inter-module communication', 'Shared auth (same user accounts)', 'Independent scaling per module'] },
   { category: 'Infrastructure', items: ['Vercel (4 projects)', 'Supabase (4 instances)', 'WebGPU (3D rendering)', 'GLB/GLTF model export', 'localStorage scene persistence (interim)'] },
@@ -32,8 +32,8 @@ const ARCHITECTURE_SECTIONS = [
     body: 'All pages are server-rendered or statically generated where possible. The 3D editor runs client-side only (dynamic import, no SSR) since it requires WebGPU. State management uses React hooks + Context for auth, and the Pascal scene store (zustand-based) manages all 3D editor state. Undo/redo is handled by the Pascal temporal store (zundo-based).',
   },
   {
-    title: '3D Rendering (Pascal v0.6.0 + Three.js)',
-    body: 'The editor uses Pascal\'s architectural primitives — walls, slabs, doors, windows, stairs, zones — rendered via React Three Fiber on a WebGPU backend. All geometry is parametric: walls have thickness and height; doors have swing direction; windows have sill height. The scene graph is stored as a tree of nodes in the Pascal store (zustand).',
+    title: '3D Rendering (Pascal v0.8.0 + Three.js)',
+    body: 'The editor uses Pascal\'s architectural primitives — walls, slabs, doors, windows, columns, stairs, zones, spawn points — rendered via React Three Fiber on a WebGPU backend. All geometry is parametric: walls have thickness and height; doors have swing direction and type (interior, garage, frameless glass); windows have sill height and type (casement, awning); columns support tapered profiles. The scene graph is stored as a tree of nodes in the Pascal store (zustand).',
   },
   {
     title: 'Scene Persistence',
@@ -286,7 +286,7 @@ export default function AboutPage() {
           <div style={cardStyle}>
             {[
               { q: 'Why not QuickBooks integration?', a: 'QuickBooks is $130/month per company for features we don\'t need half of. A purpose-built system gives us P&L, balance sheet, and journal entries at ~$45/month total — with no per-seat pricing, no exit fees, and full ownership.' },
-              { q: 'Why WebGPU for the 3D editor?', a: 'Pascal v0.6.0 uses WebGPU for performance. It renders architectural geometry (walls, slabs, stairs) in a browser without plugins. Chrome 113+ and Edge 113+ support it natively. Fallback is a message explaining the browser requirement.' },
+              { q: 'Why WebGPU for the 3D editor?', a: 'Pascal v0.8.0 uses WebGPU for performance. It renders architectural geometry (walls, slabs, doors, windows, columns, stairs) in a browser without plugins. Chrome 113+ and Edge 113+ support it natively. Fallback is a message explaining the browser requirement.' },
               { q: 'Why localStorage for scene data?', a: 'Scene state changes rapidly (every mouse drag). Writing to Supabase on every change would be expensive and slow. localStorage with a 1-second debounce is a fast interim solution. The API route is ready for when a JSONB column is added to the projects table.' },
               { q: 'Why Supabase over other databases?', a: 'PostgreSQL + built-in auth + file storage + RLS + a clean admin UI. No separate auth service, no S3 bucket config, no custom RLS implementation. It\'s the right tool for the complexity level of this platform.' },
               { q: 'What happens to historical data?', a: 'Current fiscal year is included in the $15K build. Importing 2–3 years of historical QuickBooks data is available as a separate engagement. It requires careful mapping of accounts, journal entries, and balances.' },
